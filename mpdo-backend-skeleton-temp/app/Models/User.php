@@ -25,13 +25,26 @@ class User extends Authenticatable
 
     public const ROLE_BARANGAY_ALIAS = 'barangay';
 
+    public const ACCOUNT_PENDING = 'pending';
+
+    public const ACCOUNT_APPROVED = 'approved';
+
+    public const ACCOUNT_REJECTED = 'rejected';
+
     protected $fillable = [
         'name',
+        'address',
+        'contact_number',
+        'profile_photo_path',
         'email',
         'username',
         'password',
         'role',
         'is_active',
+        'account_status',
+        'account_status_remark',
+        'account_status_updated_by',
+        'account_status_updated_at',
         'barangay_id',
         'email_verified_at',
     ];
@@ -51,6 +64,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'is_active' => 'boolean',
+            'account_status_updated_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
@@ -69,6 +83,15 @@ class User extends Authenticatable
             self::ROLE_STAFF,
             self::ROLE_BARANGAY_OFFICIAL,
             self::ROLE_BARANGAY_ALIAS,
+        ];
+    }
+
+    public static function allowedAccountStatuses(): array
+    {
+        return [
+            self::ACCOUNT_PENDING,
+            self::ACCOUNT_APPROVED,
+            self::ACCOUNT_REJECTED,
         ];
     }
 
@@ -128,5 +151,10 @@ class User extends Authenticatable
     public function isBarangayOfficial(): bool
     {
         return self::normalizeRole($this->role) === self::ROLE_BARANGAY_OFFICIAL;
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->account_status === self::ACCOUNT_APPROVED;
     }
 }

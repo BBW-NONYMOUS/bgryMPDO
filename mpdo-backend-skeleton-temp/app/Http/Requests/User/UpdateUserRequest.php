@@ -33,6 +33,8 @@ class UpdateUserRequest extends FormRequest
             'role' => ['required', 'string', Rule::in(User::allowedRoles())],
             'barangay_id' => ['nullable', 'integer', 'exists:barangays,id'],
             'is_active' => ['nullable', 'boolean'],
+            'account_status' => ['nullable', 'string', Rule::in(User::allowedAccountStatuses())],
+            'account_status_remark' => ['nullable', 'string'],
         ];
     }
 

@@ -21,6 +21,16 @@ export function formatDateTime(value) {
   }).format(new Date(value));
 }
 
+export function formatDate(value) {
+  if (!value) {
+    return '--';
+  }
+
+  return new Intl.DateTimeFormat('en-PH', {
+    dateStyle: 'medium',
+  }).format(new Date(value));
+}
+
 export function buildDocumentFormData(values, file) {
   const formData = new FormData();
 

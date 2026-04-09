@@ -85,9 +85,11 @@ class DocumentController extends Controller
 
         $data = $request->validated();
         $oldPath = null;
+        $oldDisk = null;
 
         if ($request->hasFile('file')) {
             $oldPath = $document->file_path;
+            $oldDisk = $document->resolvedStorageDisk();
             $data = [
                 ...$data,
                 ...$this->documentFileService->store($request->file('file')),
@@ -97,7 +99,7 @@ class DocumentController extends Controller
         $document->fill($data)->save();
 
         if ($oldPath) {
-            $this->documentFileService->delete($oldPath);
+            $this->documentFileService->delete($oldPath, $oldDisk);
         }
 
         $document->load(['category', 'barangay', 'uploader']);
@@ -113,8 +115,9 @@ class DocumentController extends Controller
         $this->authorize('delete', $document);
 
         $path = $document->file_path;
+        $disk = $document->resolvedStorageDisk();
         $document->delete();
-        $this->documentFileService->delete($path);
+        $this->documentFileService->delete($path, $disk);
 
         return response()->json([
             'message' => 'Document deleted successfully.',
@@ -125,7 +128,7 @@ class DocumentController extends Controller
     {
         $this->authorize('download', $document);
 
-        $disk = Storage::disk('public');
+        $disk = Storage::disk($document->resolvedStorageDisk());
 
         abort_unless($disk->exists($document->file_path), 404, 'Stored file not found.');
 
@@ -143,5 +146,29 @@ class DocumentController extends Controller
         );
 
         return $disk->download($document->file_path, $document->original_file_name);
+    }
+
+    public function preview(Request $request, Document $document): StreamedResponse
+    {
+        $this->authorize('view', $document);
+
+        $disk = Storage::disk($document->resolvedStorageDisk());
+
+        abort_unless($disk->exists($document->file_path), 404, 'Stored file not found.');
+
+        $this->activityLogService->log(
+            action: 'document.previewed',
+            module: 'documents',
+            description: "Previewed document {$document->title}.",
+            user: $request->user(),
+            document: $document,
+            details: [
+                'document_id' => $document->id,
+                'file_name' => $document->original_file_name,
+            ],
+            request: $request,
+        );
+
+        return $disk->response($document->file_path, $document->original_file_name, disposition: 'inline');
     }
 }

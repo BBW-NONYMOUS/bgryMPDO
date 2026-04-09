@@ -9,17 +9,19 @@ use Illuminate\Support\Str;
 class DocumentFileService
 {
     public function __construct(
-        private readonly string $disk = 'public',
+        private readonly ?string $disk = null,
     ) {
     }
 
     public function store(UploadedFile $file): array
     {
+        $disk = $this->disk ?? (string) config('mpdo.documents_disk', 'local');
         $extension = $file->getClientOriginalExtension();
         $fileName = Str::uuid()->toString().'.'.$extension;
-        $path = $file->storeAs('documents', $fileName, $this->disk);
+        $path = $file->storeAs('documents', $fileName, $disk);
 
         return [
+            'storage_disk' => $disk,
             'file_name' => $fileName,
             'original_file_name' => $file->getClientOriginalName(),
             'file_path' => $path,
@@ -28,10 +30,12 @@ class DocumentFileService
         ];
     }
 
-    public function delete(?string $path): void
+    public function delete(?string $path, ?string $disk = null): void
     {
-        if ($path && Storage::disk($this->disk)->exists($path)) {
-            Storage::disk($this->disk)->delete($path);
+        $disk ??= $this->disk ?? (string) config('mpdo.documents_disk', 'local');
+
+        if ($path && Storage::disk($disk)->exists($path)) {
+            Storage::disk($disk)->delete($path);
         }
     }
 }

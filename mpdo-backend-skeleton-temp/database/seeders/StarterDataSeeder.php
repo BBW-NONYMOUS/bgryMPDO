@@ -6,7 +6,6 @@ use App\Models\Barangay;
 use App\Models\Category;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class StarterDataSeeder extends Seeder
 {
@@ -37,45 +36,60 @@ class StarterDataSeeder extends Seeder
             );
         }
 
-        $password = Hash::make('password123');
+        $this->seedUser([
+            'email' => 'admin@mpdo.local',
+            'name' => 'MPDO Administrator',
+            'username' => 'admin',
+            'password' => 'password123',
+            'role' => User::ROLE_ADMIN,
+            'is_active' => true,
+            'account_status' => User::ACCOUNT_APPROVED,
+            'account_status_updated_at' => now(),
+            'email_verified_at' => now(),
+            'barangay_id' => null,
+        ]);
 
-        User::query()->updateOrCreate(
-            ['email' => 'admin@mpdo.local'],
-            [
-                'name' => 'MPDO Administrator',
-                'username' => 'admin',
-                'password' => $password,
-                'role' => User::ROLE_ADMIN,
-                'is_active' => true,
-                'email_verified_at' => now(),
-                'barangay_id' => null,
-            ],
-        );
+        $this->seedUser([
+            'email' => 'staff@mpdo.local',
+            'name' => 'MPDO Staff',
+            'username' => 'staff',
+            'password' => 'password123',
+            'role' => User::ROLE_STAFF,
+            'is_active' => true,
+            'account_status' => User::ACCOUNT_APPROVED,
+            'account_status_updated_at' => now(),
+            'email_verified_at' => now(),
+            'barangay_id' => null,
+        ]);
 
-        User::query()->updateOrCreate(
-            ['email' => 'staff@mpdo.local'],
-            [
-                'name' => 'MPDO Staff',
-                'username' => 'staff',
-                'password' => $password,
-                'role' => User::ROLE_STAFF,
-                'is_active' => true,
-                'email_verified_at' => now(),
-                'barangay_id' => null,
-            ],
-        );
+        $this->seedUser([
+            'email' => 'barangay@mpdo.local',
+            'name' => 'Barangay Official',
+            'username' => 'barangay',
+            'password' => 'password123',
+            'role' => User::ROLE_BARANGAY_OFFICIAL,
+            'is_active' => true,
+            'account_status' => User::ACCOUNT_APPROVED,
+            'account_status_updated_at' => now(),
+            'email_verified_at' => now(),
+            'barangay_id' => $barangays['Poblacion']->id,
+        ]);
+    }
 
-        User::query()->updateOrCreate(
-            ['email' => 'barangay@mpdo.local'],
-            [
-                'name' => 'Barangay Official',
-                'username' => 'barangay',
-                'password' => $password,
-                'role' => User::ROLE_BARANGAY_OFFICIAL,
-                'is_active' => true,
-                'email_verified_at' => now(),
-                'barangay_id' => $barangays['Poblacion']->id,
-            ],
-        );
+    private function seedUser(array $attributes): void
+    {
+        $user = User::query()
+            ->where('username', $attributes['username'])
+            ->orWhere('email', $attributes['email'])
+            ->first();
+
+        if ($user) {
+            $user->fill($attributes);
+            $user->save();
+
+            return;
+        }
+
+        User::query()->create($attributes);
     }
 }

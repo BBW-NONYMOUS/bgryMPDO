@@ -8,6 +8,8 @@ import Dashboard from '../pages/Dashboard';
 import Documents from '../pages/Documents';
 import Login from '../pages/Login';
 import NotFound from '../pages/NotFound';
+import Profile from '../pages/Profile';
+import Settings from '../pages/Settings';
 import UploadDocument from '../pages/UploadDocument';
 import Users from '../pages/Users';
 
@@ -26,11 +28,20 @@ export default function AppRoutes() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/documents" element={<Documents />} />
+        <Route path="/profile" element={<Profile />} />
         <Route
           path="/documents/upload"
           element={(
             <ProtectedRoute roles={['admin', 'staff']}>
               <UploadDocument />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/settings"
+          element={(
+            <ProtectedRoute roles={['admin']}>
+              <Settings />
             </ProtectedRoute>
           )}
         />

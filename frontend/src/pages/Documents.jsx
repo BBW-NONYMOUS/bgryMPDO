@@ -1,13 +1,44 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { deleteDocument, downloadDocument, getDocuments } from '../api/documentApi';
+import {
+  deleteDocument,
+  downloadDocument,
+  getDocuments,
+  previewDocument,
+  updateDocument,
+} from '../api/documentApi';
+import { downloadDocumentsReport } from '../api/reportApi';
 import { getBarangays, getCategories } from '../api/lookupApi';
+import { getSettings } from '../api/settingsApi';
+import EmptyState from '../components/common/EmptyState';
 import LoadingState from '../components/common/LoadingState';
+import Modal from '../components/common/Modal';
 import SearchFilterBar from '../components/common/SearchFilterBar';
 import StatusPill from '../components/common/StatusPill';
+import DocumentForm from '../components/forms/DocumentForm';
 import DataTable from '../components/tables/DataTable';
 import { useAuth } from '../hooks/useAuth';
-import { extractCollection, formatDateTime } from '../utils/apiData';
+import {
+  alertErrorClassName,
+  dangerButtonClassName,
+  ghostButtonClassName,
+  pageStackClassName,
+  pageTitleClassName,
+  panelClassName,
+  panelHeaderBetweenClassName,
+  primaryButtonClassName,
+  sectionEyebrowClassName,
+  smallButtonClassName,
+  tableActionsClassName,
+} from '../styles/uiClasses';
+import {
+  buildDocumentFormData,
+  extractCollection,
+  formatDate,
+  formatDateTime,
+} from '../utils/apiData';
+
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 const defaultFilters = {
   search: '',
@@ -18,23 +49,82 @@ const defaultFilters = {
   date_to: '',
 };
 
+const blankDocument = {
+  title: '',
+  document_number: '',
+  document_date: '',
+  description: '',
+  keywords: '',
+  remarks: '',
+  category_id: '',
+  barangay_id: '',
+  access_level: 'staff',
+  status: 'draft',
+};
+
+function mapDocumentToForm(document) {
+  return {
+    title: document.title ?? '',
+    document_number: document.document_number ?? '',
+    document_date: document.document_date ?? '',
+    description: document.description ?? '',
+    keywords: document.keywords ?? '',
+    remarks: document.remarks ?? '',
+    category_id: document.category?.id ? String(document.category.id) : '',
+    barangay_id: document.barangay?.id ? String(document.barangay.id) : '',
+    access_level: document.access_level ?? 'staff',
+    status: document.status ?? 'draft',
+  };
+}
+
+function FolderIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      className="h-7 w-7"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3.75 7.5a2.25 2.25 0 0 1 2.25-2.25h4.09a2.25 2.25 0 0 1 1.59.66l1.32 1.33c.42.42.99.66 1.59.66H18A2.25 2.25 0 0 1 20.25 10v6.75A2.25 2.25 0 0 1 18 19H6a2.25 2.25 0 0 1-2.25-2.25V7.5Z"
+      />
+    </svg>
+  );
+}
+
 export default function Documents() {
   const { user } = useAuth();
   const [documents, setDocuments] = useState([]);
   const [categories, setCategories] = useState([]);
   const [barangays, setBarangays] = useState([]);
+  const [statusOptions, setStatusOptions] = useState(['draft', 'active', 'archived']);
+  const [accessLevelOptions, setAccessLevelOptions] = useState(['admin', 'staff', 'barangay']);
   const [filters, setFilters] = useState(defaultFilters);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(null);
+  const [formValues, setFormValues] = useState(blankDocument);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const canEdit = ['admin', 'staff'].includes(user?.role);
 
   useEffect(() => {
     async function loadLookups() {
-      const [categoryResponse, barangayResponse] = await Promise.all([
+      const [categoryResponse, barangayResponse, settingsResponse] = await Promise.all([
         getCategories({ per_page: 100 }),
         getBarangays({ per_page: 100 }),
+        getSettings(),
       ]);
 
       setCategories(extractCollection(categoryResponse));
       setBarangays(extractCollection(barangayResponse));
+      setStatusOptions(settingsResponse.settings?.document_statuses ?? ['draft', 'active', 'archived']);
+      setAccessLevelOptions(settingsResponse.settings?.document_access_levels ?? ['admin', 'staff', 'barangay']);
     }
 
     loadLookups();
@@ -59,6 +149,66 @@ export default function Documents() {
     setFilters((current) => ({ ...current, [field]: value }));
   }
 
+  function openEdit(document) {
+    setEditing(document);
+    setFormValues(mapDocumentToForm(document));
+    setSelectedFile(null);
+    setMessage('');
+  }
+
+  function closeEdit() {
+    setEditing(null);
+    setFormValues(blankDocument);
+    setSelectedFile(null);
+    setMessage('');
+  }
+
+  function handleFileChange(nextFile) {
+    if (!nextFile) {
+      setSelectedFile(null);
+      return;
+    }
+
+    if (nextFile.size > MAX_UPLOAD_BYTES) {
+      setSelectedFile(null);
+      setMessage('The selected file is too large. The current server upload limit is 5 MB.');
+      return;
+    }
+
+    setMessage('');
+    setSelectedFile(nextFile);
+  }
+
+  async function handleEditSubmit(event) {
+    event.preventDefault();
+
+    if (!editing) {
+      return;
+    }
+
+    setSubmitting(true);
+    setMessage('');
+
+    try {
+      await updateDocument(editing.id, buildDocumentFormData(formValues, selectedFile));
+      closeEdit();
+      await loadDocuments(filters);
+    } catch (error) {
+      const validationErrors = error.response?.data?.errors;
+      const firstValidationMessage = validationErrors
+        ? Object.values(validationErrors).flat()[0]
+        : null;
+
+      setMessage(
+        firstValidationMessage ??
+          error.response?.data?.message ??
+          'Unable to update the document.'
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function handleDelete(id) {
     if (!window.confirm('Delete this document record?')) {
       return;
@@ -68,18 +218,24 @@ export default function Documents() {
     await loadDocuments(filters);
   }
 
-  const canEdit = ['admin', 'staff'].includes(user?.role);
+  function handleResetFilters() {
+    setFilters(defaultFilters);
+    loadDocuments(defaultFilters);
+  }
+
+  const hasActiveFilters = Object.values(filters).some((value) => value !== '');
 
   return (
-    <div className="page-stack">
-      <article className="panel">
-        <div className="panel__header panel__header--space-between">
+    <div className={pageStackClassName}>
+      <article className={panelClassName}>
+        <div className={panelHeaderBetweenClassName}>
           <div>
-            <p className="section-label">Records Center</p>
-            <h2>Document library</h2>
+            <p className={sectionEyebrowClassName}>Records Center</p>
+            <h2 className={pageTitleClassName}>Document library</h2>
           </div>
+
           {canEdit ? (
-            <Link to="/documents/upload" className="button button--primary">
+            <Link to="/documents/upload" className={primaryButtonClassName}>
               Upload New Document
             </Link>
           ) : null}
@@ -87,28 +243,37 @@ export default function Documents() {
 
         <SearchFilterBar
           fields={[
-            { name: 'search', label: 'Search', placeholder: 'Title, number, or keyword' },
+            {
+              name: 'search',
+              label: 'Search',
+              placeholder: 'Title, number, or keyword',
+            },
             {
               name: 'category_id',
               label: 'Category',
               type: 'select',
-              options: categories.map((item) => ({ value: item.id, label: item.name })),
+              options: categories.map((item) => ({
+                value: item.id,
+                label: item.name,
+              })),
             },
             {
               name: 'barangay_id',
               label: 'Barangay',
               type: 'select',
-              options: barangays.map((item) => ({ value: item.id, label: item.name })),
+              options: barangays.map((item) => ({
+                value: item.id,
+                label: item.name,
+              })),
             },
             {
               name: 'status',
               label: 'Status',
               type: 'select',
-              options: [
-                { value: 'draft', label: 'Draft' },
-                { value: 'active', label: 'Active' },
-                { value: 'archived', label: 'Archived' },
-              ],
+              options: statusOptions.map((status) => ({
+                value: status,
+                label: status.replace(/[_-]+/g, ' ').replace(/\b\w/g, (match) => match.toUpperCase()),
+              })),
             },
             { name: 'date_from', label: 'Date From', type: 'date' },
             { name: 'date_to', label: 'Date To', type: 'date' },
@@ -119,40 +284,124 @@ export default function Documents() {
             event.preventDefault();
             loadDocuments(filters);
           }}
-          onReset={() => {
-            setFilters(defaultFilters);
-            loadDocuments(defaultFilters);
-          }}
+          onReset={handleResetFilters}
+          actions={
+            <button
+              type="button"
+              className={ghostButtonClassName}
+              onClick={() => downloadDocumentsReport(filters)}
+            >
+              Export Report
+            </button>
+          }
         />
 
         {loading ? (
-          <LoadingState title="Loading documents" description="Fetching archive records and applying your filters." />
+          <LoadingState
+            title="Loading documents"
+            description="Fetching archive records and applying your filters."
+          />
+        ) : documents.length === 0 ? (
+          <EmptyState
+            icon={<FolderIcon />}
+            title={hasActiveFilters ? 'No documents match your filters' : 'No documents found'}
+            description={
+              hasActiveFilters
+                ? 'Try adjusting your search or reset the current filters to see more records.'
+                : 'There are no document records yet. Start by uploading your first document to build the library.'
+            }
+            primaryAction={
+              canEdit ? (
+                <Link to="/documents/upload" className={primaryButtonClassName}>
+                  Upload Document
+                </Link>
+              ) : null
+            }
+            secondaryAction={
+              hasActiveFilters ? (
+                <button
+                  type="button"
+                  className={ghostButtonClassName}
+                  onClick={handleResetFilters}
+                >
+                  Reset Filters
+                </button>
+              ) : null
+            }
+          />
         ) : (
           <DataTable
             columns={[
               { key: 'title', label: 'Title' },
-              { key: 'keywords', label: 'Keywords', render: (row) => row.keywords || '--' },
-              { key: 'category', label: 'Category', render: (row) => row.category?.name ?? '--' },
-              { key: 'barangay', label: 'Barangay', render: (row) => row.barangay?.name ?? 'All' },
-              { key: 'status', label: 'Status', render: (row) => <StatusPill value={row.status} /> },
-              { key: 'uploaded_at', label: 'Uploaded', render: (row) => formatDateTime(row.uploaded_at ?? row.created_at) },
+              {
+                key: 'document_date',
+                label: 'Document Date',
+                render: (row) => formatDate(row.document_date),
+              },
+              {
+                key: 'keywords',
+                label: 'Keywords',
+                render: (row) => row.keywords || '--',
+              },
+              {
+                key: 'category',
+                label: 'Category',
+                render: (row) => row.category?.name ?? '--',
+              },
+              {
+                key: 'barangay',
+                label: 'Barangay',
+                render: (row) => row.barangay?.name ?? 'All',
+              },
+              {
+                key: 'status',
+                label: 'Status',
+                render: (row) => <StatusPill value={row.status} />,
+              },
+              {
+                key: 'uploaded_at',
+                label: 'Uploaded',
+                render: (row) => formatDateTime(row.uploaded_at ?? row.created_at),
+              },
               {
                 key: 'actions',
                 label: 'Actions',
                 render: (row) => (
-                  <div className="table-actions">
-                    <a
-                      className="button button--ghost button--sm"
-                      href="#download"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        downloadDocument(row.id, row.file_name ?? `${row.title}.pdf`);
-                      }}
+                  <div className={tableActionsClassName}>
+                    <button
+                      type="button"
+                      className={`${ghostButtonClassName} ${smallButtonClassName}`}
+                      onClick={() => previewDocument(row.id)}
+                    >
+                      View
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`${ghostButtonClassName} ${smallButtonClassName}`}
+                      onClick={() =>
+                        downloadDocument(row.id, row.file_name ?? `${row.title}.pdf`)
+                      }
                     >
                       Download
-                    </a>
+                    </button>
+
                     {canEdit ? (
-                      <button type="button" className="button button--danger button--sm" onClick={() => handleDelete(row.id)}>
+                      <button
+                        type="button"
+                        className={`${ghostButtonClassName} ${smallButtonClassName}`}
+                        onClick={() => openEdit(row)}
+                      >
+                        Edit
+                      </button>
+                    ) : null}
+
+                    {canEdit ? (
+                      <button
+                        type="button"
+                        className={`${dangerButtonClassName} ${smallButtonClassName}`}
+                        onClick={() => handleDelete(row.id)}
+                      >
                         Delete
                       </button>
                     ) : null}
@@ -161,11 +410,29 @@ export default function Documents() {
               },
             ]}
             rows={documents}
-            emptyTitle="No documents found"
-            emptyDescription="Try a broader search or upload the first document record."
           />
         )}
       </article>
+
+      <Modal title="Edit Document" open={Boolean(editing)} onClose={closeEdit}>
+        {message ? <div className={`${alertErrorClassName} mb-4`}>{message}</div> : null}
+
+        <DocumentForm
+          values={formValues}
+          categories={categories}
+          barangays={barangays}
+          statusOptions={statusOptions}
+          accessLevelOptions={accessLevelOptions}
+          onChange={(field, value) =>
+            setFormValues((current) => ({ ...current, [field]: value }))
+          }
+          onFileChange={handleFileChange}
+          onSubmit={handleEditSubmit}
+          submitting={submitting}
+          submitLabel="Save Changes"
+          fileHelpText="Leave the file empty to keep the current attachment. Supported formats: PDF, DOCX, XLSX, PPT, JPG, and PNG."
+        />
+      </Modal>
     </div>
   );
 }

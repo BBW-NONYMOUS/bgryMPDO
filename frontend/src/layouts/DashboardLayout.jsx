@@ -4,11 +4,11 @@ import Sidebar from '../components/layout/Sidebar';
 
 export default function DashboardLayout() {
   return (
-    <div className="min-h-screen scroll-smooth bg-zinc-100 text-zinc-900">
+    <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <Sidebar />
-      <div className="min-w-0 bg-gradient-to-b from-white/70 to-zinc-100/95 lg:pl-[264px]">
+      <div className="min-w-0 lg:pl-66">
         <Navbar />
-        <main className="px-4 pb-8 pt-2 sm:px-6 lg:px-8">
+        <main className="px-4 pb-10 pt-4 sm:px-6 lg:px-8">
           <Outlet />
         </main>
       </div>

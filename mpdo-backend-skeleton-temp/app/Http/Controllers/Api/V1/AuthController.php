@@ -41,6 +41,18 @@ class AuthController extends Controller
             ]);
         }
 
+        if (! $user->isApproved()) {
+            $message = match ($user->account_status) {
+                User::ACCOUNT_PENDING => 'This account is pending approval.',
+                User::ACCOUNT_REJECTED => 'This account has been rejected.',
+                default => 'This account is not approved.',
+            };
+
+            throw ValidationException::withMessages([
+                'email' => $message,
+            ]);
+        }
+
         $token = $user->createToken('mpdo-api')->plainTextToken;
 
         $this->activityLogService->log(

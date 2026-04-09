@@ -1,4 +1,5 @@
 import api from './axios';
+import { downloadBlobFromEndpoint, openBlobFromEndpoint } from './fileTransfer';
 
 export async function getDocuments(params = {}) {
   const response = await api.get('/documents', { params });
@@ -36,18 +37,11 @@ export function getDocumentDownloadUrl(id) {
 }
 
 export async function downloadDocument(id, fallbackName = 'document') {
-  const response = await api.get(`/documents/${id}/download`, {
-    responseType: 'blob',
-  });
+  return downloadBlobFromEndpoint(`/documents/${id}/download`, fallbackName);
+}
 
-  const url = window.URL.createObjectURL(new Blob([response.data]));
-  const link = window.document.createElement('a');
-  link.href = url;
-  link.setAttribute('download', fallbackName);
-  window.document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.URL.revokeObjectURL(url);
+export async function previewDocument(id) {
+  return openBlobFromEndpoint(`/documents/${id}/preview`);
 }
 
 export async function deleteDocument(id) {

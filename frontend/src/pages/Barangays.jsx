@@ -3,6 +3,26 @@ import Modal from '../components/common/Modal';
 import SearchFilterBar from '../components/common/SearchFilterBar';
 import DataTable from '../components/tables/DataTable';
 import { createBarangay, deleteBarangay, getBarangays, updateBarangay } from '../api/lookupApi';
+import {
+  dangerButtonClassName,
+  fieldClassName,
+  fieldFullClassName,
+  fieldLabelClassName,
+  formActionsClassName,
+  formGridClassName,
+  ghostButtonClassName,
+  inputClassName,
+  pageStackClassName,
+  pageTitleClassName,
+  panelClassName,
+  panelHeaderBetweenClassName,
+  primaryButtonClassName,
+  sectionEyebrowClassName,
+  selectClassName,
+  smallButtonClassName,
+  tableActionsClassName,
+  textareaClassName,
+} from '../styles/uiClasses';
 import { extractCollection } from '../utils/apiData';
 
 const blankBarangay = {
@@ -66,14 +86,14 @@ export default function Barangays() {
   }
 
   return (
-    <div className="page-stack">
-      <article className="panel">
-        <div className="panel__header panel__header--space-between">
+    <div className={pageStackClassName}>
+      <article className={panelClassName}>
+        <div className={panelHeaderBetweenClassName}>
           <div>
-            <p className="section-label">Coverage Setup</p>
-            <h2>Barangay directory</h2>
+            <p className={sectionEyebrowClassName}>Coverage Setup</p>
+            <h2 className={pageTitleClassName}>Barangay directory</h2>
           </div>
-          <button type="button" className="button button--primary" onClick={openCreate}>
+          <button type="button" className={primaryButtonClassName} onClick={openCreate}>
             Add Barangay
           </button>
         </div>
@@ -103,11 +123,11 @@ export default function Barangays() {
               key: 'actions',
               label: 'Actions',
               render: (row) => (
-                <div className="table-actions">
-                  <button type="button" className="button button--ghost button--sm" onClick={() => openEdit(row)}>
+                <div className={tableActionsClassName}>
+                  <button type="button" className={`${ghostButtonClassName} ${smallButtonClassName}`} onClick={() => openEdit(row)}>
                     Edit
                   </button>
-                  <button type="button" className="button button--danger button--sm" onClick={() => handleDelete(row.id)}>
+                  <button type="button" className={`${dangerButtonClassName} ${smallButtonClassName}`} onClick={() => handleDelete(row.id)}>
                     Delete
                   </button>
                 </div>
@@ -121,28 +141,29 @@ export default function Barangays() {
       </article>
 
       <Modal title={editing ? 'Edit Barangay' : 'Add Barangay'} open={open} onClose={() => setOpen(false)}>
-        <form className="form-grid" onSubmit={handleSubmit}>
-          <label className="field field--full">
-            <span>Barangay Name</span>
-            <input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} required />
+        <form className={formGridClassName} onSubmit={handleSubmit}>
+          <label className={`${fieldClassName} ${fieldFullClassName}`}>
+            <span className={fieldLabelClassName}>Barangay Name</span>
+            <input className={inputClassName} value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} required />
           </label>
-          <label className="field field--full">
-            <span>Description</span>
+          <label className={`${fieldClassName} ${fieldFullClassName}`}>
+            <span className={fieldLabelClassName}>Description</span>
             <textarea
+              className={textareaClassName}
               rows="4"
               value={form.description}
               onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
             />
           </label>
-          <label className="field">
-            <span>Status</span>
-            <select value={String(form.is_active)} onChange={(event) => setForm((current) => ({ ...current, is_active: event.target.value === 'true' }))}>
+          <label className={fieldClassName}>
+            <span className={fieldLabelClassName}>Status</span>
+            <select className={selectClassName} value={String(form.is_active)} onChange={(event) => setForm((current) => ({ ...current, is_active: event.target.value === 'true' }))}>
               <option value="true">Active</option>
               <option value="false">Inactive</option>
             </select>
           </label>
-          <div className="field field--full form-actions">
-            <button type="submit" className="button button--primary">
+          <div className={formActionsClassName}>
+            <button type="submit" className={primaryButtonClassName}>
               Save Barangay
             </button>
           </div>

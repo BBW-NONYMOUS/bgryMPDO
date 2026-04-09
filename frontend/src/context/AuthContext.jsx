@@ -10,6 +10,12 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(Boolean(getStoredToken()));
 
   useEffect(() => {
+    if (token && user) {
+      setStoredUser(user);
+    }
+  }, [token, user]);
+
+  useEffect(() => {
     async function bootstrap() {
       if (!token) {
         setLoading(false);

@@ -5,6 +5,8 @@ const titleMap = {
   '/dashboard': 'Dashboard',
   '/documents': 'Documents',
   '/documents/upload': 'Upload Document',
+  '/profile': 'My Profile',
+  '/settings': 'Settings',
   '/categories': 'Categories',
   '/barangays': 'Barangays',
   '/users': 'Users',
@@ -15,6 +17,8 @@ const descriptionMap = {
   '/dashboard': 'Monitor archive growth, upload activity, and operational movement in one view.',
   '/documents': 'Browse, filter, and manage archived municipal records.',
   '/documents/upload': 'Create a new archive record and attach the official file.',
+  '/profile': 'Update your personal details and password.',
+  '/settings': 'Configure core options used in validation and access control.',
   '/categories': 'Maintain the document taxonomy used across the archive.',
   '/barangays': 'Manage barangay access scope and classification references.',
   '/users': 'Control users, permissions, and account assignments.',
@@ -24,28 +28,36 @@ const descriptionMap = {
 export default function Navbar() {
   const { pathname } = useLocation();
   const { user } = useAuth();
-  const userScope = user?.barangay?.name ? `${user.role} | ${user.barangay.name}` : user?.role;
+  const userScope = user?.barangay?.name
+    ? `${user.role} · ${user.barangay.name}`
+    : user?.role;
 
   return (
-    <header className="flex flex-col gap-4 px-4 pt-6 sm:px-6 lg:flex-row lg:items-start lg:justify-between lg:px-8">
-      <div>
-        <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-400">MPDO Archiving System</p>
-        <h1 className="text-[clamp(1.85rem,3vw,2.65rem)] font-semibold leading-none tracking-[-0.04em] text-zinc-900">
-          {titleMap[pathname] ?? 'Workspace'}
-        </h1>
-        <p className="mt-2 max-w-3xl text-sm text-zinc-500 sm:text-[15px]">
-          {descriptionMap[pathname] ?? 'Manage records, users, and archive operations.'}
-        </p>
-      </div>
-
-      <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white/90 px-3 py-3 shadow-[0_12px_24px_rgba(15,23,42,0.05)]">
-        <div className="grid size-11 place-items-center rounded-full bg-gradient-to-br from-zinc-900 to-zinc-700 text-sm font-bold text-white">
-          {user?.name?.slice(0, 1)?.toUpperCase() ?? 'U'}
-        </div>
+    <header className="border-b border-zinc-200 bg-white px-4 py-5 sm:px-6 lg:px-8">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <strong className="block text-sm font-semibold text-zinc-900">{user?.name ?? 'Archive User'}</strong>
-          <p className="text-sm text-zinc-500">{userScope ?? 'Authenticated session'}</p>
+          <div className="flex items-center gap-2">
+            <span className="size-1.5 rounded-full bg-blue-500" />
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-blue-500">
+              MPDO Archiving System
+            </p>
+          </div>
+          <h1 className="mt-1 text-[clamp(1.5rem,3vw,2rem)] font-bold leading-tight tracking-[-0.03em] text-zinc-900">
+            {titleMap[pathname] ?? 'Workspace'}
+          </h1>
+          <p className="mt-1 max-w-2xl text-sm text-zinc-500">
+            {descriptionMap[pathname] ?? 'Manage records, users, and archive operations.'}
+          </p>
         </div>
+
+        {userScope ? (
+          <div className="mt-3 flex-shrink-0 sm:mt-0">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-600">
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              {userScope}
+            </span>
+          </div>
+        ) : null}
       </div>
     </header>
   );

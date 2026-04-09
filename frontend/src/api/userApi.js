@@ -19,3 +19,13 @@ export async function deleteUser(id) {
   const response = await api.delete(`/users/${id}`);
   return response.data;
 }
+
+export async function approveUser(id, remark) {
+  const response = await api.post(`/users/${id}/approve`, remark ? { remark } : {});
+  return response.data;
+}
+
+export async function rejectUser(id, remark) {
+  const response = await api.post(`/users/${id}/reject`, remark ? { remark } : {});
+  return response.data;
+}

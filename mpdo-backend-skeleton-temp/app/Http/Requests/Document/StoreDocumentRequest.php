@@ -12,6 +12,8 @@ class StoreDocumentRequest extends FormRequest
 
     private const DEFAULT_MAX_KILOBYTES = self::APP_MAX_KILOBYTES;
 
+    private const SUPPORTED_EXTENSIONS = 'pdf,docx,xlsx,ppt,pptx,jpg,jpeg,png';
+
     public function authorize(): bool
     {
         return true;
@@ -30,7 +32,7 @@ class StoreDocumentRequest extends FormRequest
             'remarks' => ['nullable', 'string'],
             'access_level' => ['required', 'string', Rule::in(Document::allowedAccessLevels())],
             'status' => ['required', 'string', Rule::in(Document::allowedStatuses())],
-            'file' => ['required', 'file', 'max:'.$this->effectiveMaxKilobytes()],
+            'file' => ['required', 'file', 'mimes:'.self::SUPPORTED_EXTENSIONS, 'max:'.$this->effectiveMaxKilobytes()],
         ];
     }
 
@@ -41,6 +43,7 @@ class StoreDocumentRequest extends FormRequest
         return [
             'file.required' => 'Please select a file to upload.',
             'file.uploaded' => "The file could not be uploaded. The current server upload limit is {$maxMegabytes} MB.",
+            'file.mimes' => 'Only PDF, DOCX, XLSX, PPT, JPG, and PNG files are supported.',
             'file.max' => "The file is too large. The current server upload limit is {$maxMegabytes} MB.",
         ];
     }

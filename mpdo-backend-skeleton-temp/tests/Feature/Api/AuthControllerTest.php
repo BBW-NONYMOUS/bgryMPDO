@@ -28,6 +28,7 @@ class AuthControllerTest extends TestCase
             'role' => User::ROLE_BARANGAY_OFFICIAL,
             'barangay_id' => $barangay->id,
             'is_active' => true,
+            'account_status' => User::ACCOUNT_APPROVED,
         ]);
 
         $loginResponse = $this->postJson('/api/v1/auth/login', [
@@ -48,5 +49,24 @@ class AuthControllerTest extends TestCase
             ->assertOk()
             ->assertJsonPath('user.email', 'barangay@mpdo.local')
             ->assertJsonPath('user.role', User::ROLE_BARANGAY_ALIAS);
+    }
+
+    public function test_pending_account_cannot_login(): void
+    {
+        User::factory()->create([
+            'email' => 'pending@mpdo.local',
+            'password' => Hash::make('password123'),
+            'is_active' => true,
+            'account_status' => User::ACCOUNT_PENDING,
+        ]);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'email' => 'pending@mpdo.local',
+            'password' => 'password123',
+        ]);
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonPath('errors.email.0', 'This account is pending approval.');
     }
 }

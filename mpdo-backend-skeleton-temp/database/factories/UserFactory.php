@@ -30,6 +30,8 @@ class UserFactory extends Factory
             'username' => fake()->unique()->userName(),
             'role' => User::ROLE_STAFF,
             'is_active' => true,
+            'account_status' => User::ACCOUNT_APPROVED,
+            'account_status_updated_at' => now(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),

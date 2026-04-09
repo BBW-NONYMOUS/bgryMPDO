@@ -24,88 +24,118 @@ export default function Login() {
       await login(form);
       navigate(location.state?.from?.pathname ?? '/dashboard', { replace: true });
     } catch (requestError) {
-      setError(requestError.response?.data?.message ?? 'Unable to sign in. Check your credentials and backend API.');
+      setError(
+        requestError.response?.data?.message ??
+          'Unable to sign in. Check your credentials and try again.'
+      );
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-zinc-50 via-white to-zinc-100 px-4 py-8">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-900 px-4 py-8">
+      {/* Background image */}
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-90"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
         style={{ backgroundImage: `url(${loginBackground})` }}
         aria-hidden="true"
       />
-      <div className="absolute inset-0 bg-white/60" aria-hidden="true" />
 
-      <section className="relative z-10 w-full max-w-sm rounded-[2rem] border border-zinc-200/80 bg-white/88 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm sm:p-8">
-        <form className="mx-auto flex w-full flex-col items-center gap-4" onSubmit={handleSubmit}>
-          <div className="flex flex-col items-center gap-3 text-center">
-            <div className="grid size-20 place-items-center rounded-full border border-zinc-200 bg-gradient-to-b from-white to-zinc-100 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
-              <svg viewBox="0 0 64 64" className="size-12" aria-hidden="true">
-                <circle cx="32" cy="18" r="10" fill="#f2c9a5" />
-                <path d="M22 18c0-6 4.6-11 10-11s10 5 10 11c-1.7-3.2-5-5.2-10-5.2S23.7 14.8 22 18Z" fill="#334155" />
-                <path d="M18 49c1.5-10.2 8.1-16 14-16s12.5 5.8 14 16Z" fill="#1f2937" />
-                <path d="M31.5 34h1l6.2 8.3-6.7 7.6-6.5-7.6Z" fill="#60a5fa" />
-                <path d="M26.5 33.6h11L32 40.3Z" fill="#0f172a" />
+      {/* Blue radial glow */}
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 size-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-600 opacity-10 blur-[120px]"
+        aria-hidden="true"
+      />
+
+      <section className="relative z-10 w-full max-w-sm">
+        {/* Card */}
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-[0_24px_60px_rgba(0,0,0,0.5)] backdrop-blur-xl">
+
+          {/* Card header accent */}
+          <div className="border-b border-white/10 bg-linear-to-r from-blue-600/30 to-blue-800/20 px-8 py-6 text-center">
+            {/* MPDO Icon */}
+            <div className="mx-auto mb-4 grid size-16 place-items-center rounded-2xl bg-linear-to-br from-blue-500 to-blue-700 shadow-[0_8px_24px_rgba(37,99,235,0.50)]">
+              <svg viewBox="0 0 40 40" className="size-9" aria-hidden="true">
+                <rect x="4" y="16" width="32" height="20" rx="2" fill="white" fillOpacity="0.15" />
+                <rect x="8" y="18" width="6" height="6" rx="1" fill="white" fillOpacity="0.8" />
+                <rect x="17" y="18" width="6" height="6" rx="1" fill="white" fillOpacity="0.8" />
+                <rect x="26" y="18" width="6" height="6" rx="1" fill="white" fillOpacity="0.8" />
+                <rect x="14" y="28" width="12" height="8" rx="1" fill="white" fillOpacity="0.9" />
+                <path d="M20 4 L34 14 H6 Z" fill="white" fillOpacity="0.9" />
               </svg>
             </div>
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-400">Secure Access</p>
-              <h2 className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-zinc-900">Member Login</h2>
-            </div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-blue-300">
+              MPDO Archiving System
+            </p>
+            <h2 className="mt-1 text-xl font-bold tracking-[-0.03em] text-white">
+              Sign In to Your Account
+            </h2>
+            <p className="mt-1 text-xs text-blue-200/70">
+              Municipal Planning &amp; Development Office
+            </p>
           </div>
 
-          <div className="grid w-full gap-3">
+          {/* Form */}
+          <form className="flex flex-col gap-4 px-8 py-6" onSubmit={handleSubmit}>
             <label className="grid gap-1.5">
-              <span className="text-xs font-medium text-zinc-500">Email</span>
+              <span className="text-xs font-semibold text-white/60">Email Address</span>
               <input
-                className="h-11 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-200"
+                className="h-11 w-full rounded-xl border border-white/10 bg-white/8 px-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20"
                 type="email"
-                placeholder="Email"
+                placeholder="admin@mpdo.local"
                 value={form.email}
-                onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, email: event.target.value }))
+                }
                 required
               />
             </label>
 
             <label className="grid gap-1.5">
-              <span className="text-xs font-medium text-zinc-500">Password</span>
+              <span className="text-xs font-semibold text-white/60">Password</span>
               <input
-                className="h-11 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-200"
+                className="h-11 w-full rounded-xl border border-white/10 bg-white/8 px-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20"
                 type="password"
-                placeholder="Password"
+                placeholder="••••••••"
                 value={form.password}
-                onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, password: event.target.value }))
+                }
                 required
               />
             </label>
-          </div>
 
-          {error ? (
-            <div className="w-full rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-center text-xs text-red-700">
-              {error}
-            </div>
-          ) : null}
+            {error ? (
+              <div className="rounded-xl border border-red-400/30 bg-red-500/15 px-3 py-2.5 text-center text-xs font-medium text-red-300">
+                {error}
+              </div>
+            ) : null}
 
-          <button
-            type="submit"
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-red-500 to-red-600 px-4 text-sm font-semibold text-white shadow-[0_10px_18px_rgba(220,38,38,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={submitting}
-          >
-            {submitting ? (
-              <>
-                <Spinner className="size-4" label="Signing in" />
-                Signing in...
-              </>
-            ) : (
-              'Login'
-            )}
-          </button>
+            <button
+              type="submit"
+              className="mt-1 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-blue-600 to-blue-700 text-sm font-bold text-white shadow-[0_6px_20px_rgba(37,99,235,0.45)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(37,99,235,0.55)] disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <Spinner className="size-4" label="Signing in" />
+                  Signing in...
+                </>
+              ) : (
+                'Sign In'
+              )}
+            </button>
 
-          <p className="text-center text-[11px] text-zinc-400">Need help with your account?</p>
-        </form>
+            <p className="text-center text-[11px] text-white/30">
+              Need help? Contact your system administrator.
+            </p>
+          </form>
+        </div>
+
+        <p className="mt-4 text-center text-[11px] text-white/20">
+          &copy; {new Date().getFullYear()} Municipal Planning &amp; Development Office
+        </p>
       </section>
     </div>
   );

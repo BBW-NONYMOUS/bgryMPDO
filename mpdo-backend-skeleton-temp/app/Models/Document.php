@@ -11,6 +11,8 @@ class Document extends Model
 {
     use HasFactory;
 
+    public const LEGACY_PUBLIC_DISK = 'public';
+
     public const ACCESS_ADMIN = 'admin';
 
     public const ACCESS_STAFF = 'staff';
@@ -27,6 +29,7 @@ class Document extends Model
         'title',
         'document_number',
         'description',
+        'storage_disk',
         'file_name',
         'original_file_name',
         'file_path',
@@ -50,7 +53,23 @@ class Document extends Model
         ];
     }
 
+    public function resolvedStorageDisk(): string
+    {
+        return $this->storage_disk ?: self::LEGACY_PUBLIC_DISK;
+    }
+
     public static function allowedAccessLevels(): array
+    {
+        $defaults = self::defaultAllowedAccessLevels();
+
+        /** @var \App\Services\SystemSettingsService $settings */
+        $settings = app(\App\Services\SystemSettingsService::class);
+        $configured = $settings->get(\App\Http\Controllers\Api\V1\SystemSettingController::KEY_DOCUMENT_ACCESS_LEVELS, $defaults);
+
+        return is_array($configured) && count($configured) > 0 ? array_values($configured) : $defaults;
+    }
+
+    public static function defaultAllowedAccessLevels(): array
     {
         return [
             self::ACCESS_ADMIN,
@@ -60,6 +79,17 @@ class Document extends Model
     }
 
     public static function allowedStatuses(): array
+    {
+        $defaults = self::defaultAllowedStatuses();
+
+        /** @var \App\Services\SystemSettingsService $settings */
+        $settings = app(\App\Services\SystemSettingsService::class);
+        $configured = $settings->get(\App\Http\Controllers\Api\V1\SystemSettingController::KEY_DOCUMENT_STATUSES, $defaults);
+
+        return is_array($configured) && count($configured) > 0 ? array_values($configured) : $defaults;
+    }
+
+    public static function defaultAllowedStatuses(): array
     {
         return [
             self::STATUS_DRAFT,

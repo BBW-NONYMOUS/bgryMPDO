@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createDocument } from '../api/documentApi';
 import { getBarangays, getCategories } from '../api/lookupApi';
+import { getSettings } from '../api/settingsApi';
 import DocumentForm from '../components/forms/DocumentForm';
+import { alertErrorClassName, pageStackClassName, pageTitleClassName, panelHeaderClassName, sectionEyebrowClassName } from '../styles/uiClasses';
 import { extractCollection, buildDocumentFormData } from '../utils/apiData';
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
@@ -10,8 +12,10 @@ const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 const initialValues = {
   title: '',
   document_number: '',
+  document_date: '',
   description: '',
   keywords: '',
+  remarks: '',
   category_id: '',
   barangay_id: '',
   access_level: 'staff',
@@ -24,18 +28,23 @@ export default function UploadDocument() {
   const [file, setFile] = useState(null);
   const [categories, setCategories] = useState([]);
   const [barangays, setBarangays] = useState([]);
+  const [statusOptions, setStatusOptions] = useState(['draft', 'active', 'archived']);
+  const [accessLevelOptions, setAccessLevelOptions] = useState(['admin', 'staff', 'barangay']);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
     async function loadLookups() {
-      const [categoryResponse, barangayResponse] = await Promise.all([
+      const [categoryResponse, barangayResponse, settingsResponse] = await Promise.all([
         getCategories({ per_page: 100 }),
         getBarangays({ per_page: 100 }),
+        getSettings(),
       ]);
 
       setCategories(extractCollection(categoryResponse));
       setBarangays(extractCollection(barangayResponse));
+      setStatusOptions(settingsResponse.settings?.document_statuses ?? ['draft', 'active', 'archived']);
+      setAccessLevelOptions(settingsResponse.settings?.document_access_levels ?? ['admin', 'staff', 'barangay']);
     }
 
     loadLookups();
@@ -76,24 +85,27 @@ export default function UploadDocument() {
   }
 
   return (
-    <div className="page-stack">
-      <div className="panel__header">
+    <div className={pageStackClassName}>
+      <div className={panelHeaderClassName}>
         <div>
-          <p className="section-label">Document Intake</p>
-          <h2>Upload and classify document</h2>
+          <p className={sectionEyebrowClassName}>Document Intake</p>
+          <h2 className={pageTitleClassName}>Upload and classify document</h2>
         </div>
       </div>
 
-      {message ? <div className="alert alert--error">{message}</div> : null}
+      {message ? <div className={alertErrorClassName}>{message}</div> : null}
 
       <DocumentForm
         values={values}
         categories={categories}
         barangays={barangays}
+        statusOptions={statusOptions}
+        accessLevelOptions={accessLevelOptions}
         onChange={(field, value) => setValues((current) => ({ ...current, [field]: value }))}
         onFileChange={handleFileChange}
         onSubmit={handleSubmit}
         submitting={submitting}
+        fileHelpText="Maximum file size is 5 MB. Supported formats: PDF, DOCX, XLSX, PPT, JPG, and PNG."
       />
     </div>
   );
