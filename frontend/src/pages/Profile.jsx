@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { updatePassword, updateProfile, uploadProfilePhoto } from '../api/authApi';
 import Spinner from '../components/common/Spinner';
 import { useAuth } from '../hooks/useAuth';
@@ -23,6 +23,11 @@ export default function Profile() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState(false);
+
+  useEffect(() => {
+    setPhotoError(false);
+  }, [user?.profile_photo_url]);
 
   const [profileForm, setProfileForm] = useState(() => ({
     name: user?.name ?? '',
@@ -103,11 +108,12 @@ export default function Profile() {
             <p className="mt-1 text-sm text-zinc-500">Used across navigation and audit logs.</p>
 
             <div className="mt-5 flex items-center gap-4">
-              {user?.profile_photo_url ? (
+              {user?.profile_photo_url && !photoError ? (
                 <img
                   src={user.profile_photo_url}
                   alt="Profile"
                   className="size-14 rounded-full border border-zinc-200 object-cover"
+                  onError={() => setPhotoError(true)}
                 />
               ) : (
                 <div className="grid size-14 place-items-center rounded-full bg-zinc-900 text-sm font-semibold text-white">

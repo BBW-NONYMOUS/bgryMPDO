@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             StarterDataSeeder::class,
             SystemSettingsSeeder::class,
+            ArchiveDemoSeeder::class,
         ]);
     }
 }

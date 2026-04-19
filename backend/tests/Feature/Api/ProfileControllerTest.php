@@ -81,5 +81,27 @@ class ProfileControllerTest extends TestCase
         $this->assertNotEmpty($photoPath);
         Storage::disk('public')->assertExists($photoPath);
     }
-}
 
+    public function test_profile_photo_is_accessible_via_storage_url(): void
+    {
+        Storage::fake('public');
+        config()->set('mpdo.avatars_disk', 'public');
+
+        $user = User::factory()->create([
+            'email' => 'staff@mpdo.local',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/v1/auth/profile/photo', [
+            'photo' => UploadedFile::fake()->image('avatar.png', 200, 200),
+        ])->assertOk();
+
+        $photoPath = $user->fresh()->profile_photo_path;
+        $this->assertNotEmpty($photoPath);
+
+        $response = $this->get('/storage/'.$photoPath);
+        $response->assertOk();
+        $this->assertStringContainsString('image/', (string) $response->headers->get('Content-Type'));
+    }
+}

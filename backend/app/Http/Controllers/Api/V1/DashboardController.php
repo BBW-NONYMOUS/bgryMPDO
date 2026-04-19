@@ -24,6 +24,7 @@ class DashboardController extends Controller
 
         $recentDocuments = (clone $visibleDocuments)
             ->with(['category', 'barangay', 'uploader'])
+            ->orderByDesc('created_at')
             ->limit(5)
             ->get();
 

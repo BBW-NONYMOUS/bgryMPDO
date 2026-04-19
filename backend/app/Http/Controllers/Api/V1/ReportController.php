@@ -91,6 +91,7 @@ class ReportController extends Controller
         $visibleDocuments = Document::query()->visibleTo($user);
         $recentDocuments = (clone $visibleDocuments)
             ->with(['category', 'barangay'])
+            ->orderByDesc('created_at')
             ->limit(5)
             ->get();
 
