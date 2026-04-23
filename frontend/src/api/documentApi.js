@@ -1,5 +1,5 @@
 import api from './axios';
-import { downloadBlobFromEndpoint, openBlobFromEndpoint } from './fileTransfer';
+import { downloadBlobFromEndpoint, openBlobFromEndpoint, printBlobFromEndpoint } from './fileTransfer';
 
 export async function getDocuments(params = {}) {
   const response = await api.get('/documents', { params });
@@ -42,6 +42,10 @@ export async function downloadDocument(id, fallbackName = 'document') {
 
 export async function previewDocument(id) {
   return openBlobFromEndpoint(`/documents/${id}/preview`);
+}
+
+export async function printDocument(id) {
+  return printBlobFromEndpoint(`/documents/${id}/preview`);
 }
 
 export async function deleteDocument(id) {

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import {
+  createDocument,
   deleteDocument,
   downloadDocument,
   getDocuments,
   previewDocument,
+  printDocument,
   updateDocument,
 } from '../api/documentApi';
 import { downloadDocumentsReport } from '../api/reportApi';
@@ -110,6 +111,12 @@ export default function Documents() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
+
+  const [uploading, setUploading] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadValues, setUploadValues] = useState(blankDocument);
+  const [uploadFile, setUploadFile] = useState(null);
+  const [uploadMessage, setUploadMessage] = useState('');
 
   const canEdit = ['admin', 'staff'].includes(user?.role);
 
@@ -218,6 +225,59 @@ export default function Documents() {
     await loadDocuments(filters);
   }
 
+  function openUpload() {
+    setUploadValues(blankDocument);
+    setUploadFile(null);
+    setUploadMessage('');
+    setUploadOpen(true);
+  }
+
+  function closeUpload() {
+    setUploadOpen(false);
+    setUploadValues(blankDocument);
+    setUploadFile(null);
+    setUploadMessage('');
+  }
+
+  function handleUploadFileChange(nextFile) {
+    if (!nextFile) {
+      setUploadFile(null);
+      return;
+    }
+    if (nextFile.size > MAX_UPLOAD_BYTES) {
+      setUploadFile(null);
+      setUploadMessage('The selected file is too large. The current server upload limit is 5 MB.');
+      return;
+    }
+    setUploadMessage('');
+    setUploadFile(nextFile);
+  }
+
+  async function handleUploadSubmit(event) {
+    event.preventDefault();
+    setUploading(true);
+    setUploadMessage('');
+
+    try {
+      await createDocument(buildDocumentFormData(uploadValues, uploadFile));
+      closeUpload();
+      await loadDocuments(filters);
+    } catch (error) {
+      const validationErrors = error.response?.data?.errors;
+      const firstValidationMessage = validationErrors
+        ? Object.values(validationErrors).flat()[0]
+        : null;
+
+      setUploadMessage(
+        firstValidationMessage ??
+          error.response?.data?.message ??
+          'Unable to save document. Review the form and backend setup.',
+      );
+    } finally {
+      setUploading(false);
+    }
+  }
+
   function handleResetFilters() {
     setFilters(defaultFilters);
     loadDocuments(defaultFilters);
@@ -235,9 +295,9 @@ export default function Documents() {
           </div>
 
           {canEdit ? (
-            <Link to="/documents/upload" className={primaryButtonClassName}>
+            <button type="button" className={primaryButtonClassName} onClick={openUpload}>
               Upload New Document
-            </Link>
+            </button>
           ) : null}
         </div>
 
@@ -312,9 +372,9 @@ export default function Documents() {
             }
             primaryAction={
               canEdit ? (
-                <Link to="/documents/upload" className={primaryButtonClassName}>
+                <button type="button" className={primaryButtonClassName} onClick={openUpload}>
                   Upload Document
-                </Link>
+                </button>
               ) : null
             }
             secondaryAction={
@@ -386,6 +446,14 @@ export default function Documents() {
                       Download
                     </button>
 
+                    <button
+                      type="button"
+                      className={`${ghostButtonClassName} ${smallButtonClassName}`}
+                      onClick={() => printDocument(row.id)}
+                    >
+                      Print
+                    </button>
+
                     {canEdit ? (
                       <button
                         type="button"
@@ -413,6 +481,26 @@ export default function Documents() {
           />
         )}
       </article>
+
+      <Modal title="Upload Document" open={uploadOpen} onClose={closeUpload}>
+        {uploadMessage ? <div className={`${alertErrorClassName} mb-4`}>{uploadMessage}</div> : null}
+
+        <DocumentForm
+          values={uploadValues}
+          categories={categories}
+          barangays={barangays}
+          statusOptions={statusOptions}
+          accessLevelOptions={accessLevelOptions}
+          onChange={(field, value) =>
+            setUploadValues((current) => ({ ...current, [field]: value }))
+          }
+          onFileChange={handleUploadFileChange}
+          onSubmit={handleUploadSubmit}
+          submitting={uploading}
+          submitLabel="Upload Document"
+          fileHelpText="Maximum file size is 5 MB. Supported formats: PDF, DOCX, XLSX, PPT, JPG, and PNG."
+        />
+      </Modal>
 
       <Modal title="Edit Document" open={Boolean(editing)} onClose={closeEdit}>
         {message ? <div className={`${alertErrorClassName} mb-4`}>{message}</div> : null}

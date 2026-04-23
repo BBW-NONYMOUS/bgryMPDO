@@ -6,6 +6,25 @@ function createObjectUrl(response) {
   return window.URL.createObjectURL(blob);
 }
 
+export async function printBlobFromEndpoint(endpoint) {
+  const response = await api.get(endpoint, { responseType: 'blob' });
+  const url = createObjectUrl(response);
+  const popup = window.open(url, '_blank', 'noopener');
+
+  if (popup) {
+    popup.onload = () => {
+      try { popup.print(); } catch (_) {}
+    };
+    // fallback: blob URLs sometimes fire load before onload is attached
+    window.setTimeout(() => {
+      try { popup.print(); } catch (_) {}
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
+    }, 1200);
+  } else {
+    window.URL.revokeObjectURL(url);
+  }
+}
+
 export async function downloadBlobFromEndpoint(endpoint, fallbackName) {
   const response = await api.get(endpoint, {
     responseType: 'blob',

@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\ActivityLogController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BarangayController;
 use App\Http\Controllers\Api\V1\CategoryController;
+use App\Http\Controllers\Api\V1\DataManagementController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DocumentController;
 use App\Http\Controllers\Api\V1\ProfileController;
@@ -61,4 +62,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::get('settings', [SystemSettingController::class, 'index']);
     Route::put('settings/{key}', [SystemSettingController::class, 'update'])->middleware('role:'.User::ROLE_ADMIN);
+
+    Route::middleware('role:'.User::ROLE_ADMIN)->prefix('data-management')->group(function (): void {
+        Route::post('seed', [DataManagementController::class, 'seed']);
+        Route::get('backup', [DataManagementController::class, 'backup']);
+        Route::post('restore', [DataManagementController::class, 'restore']);
+        Route::post('reset', [DataManagementController::class, 'reset']);
+    });
 });
