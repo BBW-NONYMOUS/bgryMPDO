@@ -8,7 +8,7 @@ use Illuminate\Validation\Rule;
 
 class UpdateDocumentRequest extends FormRequest
 {
-    private const APP_MAX_KILOBYTES = 5120;
+    private const APP_MAX_KILOBYTES = 51200;
 
     private const DEFAULT_MAX_KILOBYTES = self::APP_MAX_KILOBYTES;
 

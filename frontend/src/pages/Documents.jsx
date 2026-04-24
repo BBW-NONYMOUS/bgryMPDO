@@ -39,7 +39,7 @@ import {
   formatDateTime,
 } from '../utils/apiData';
 
-const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 
 const defaultFilters = {
   search: '',
@@ -178,7 +178,7 @@ export default function Documents() {
 
     if (nextFile.size > MAX_UPLOAD_BYTES) {
       setSelectedFile(null);
-      setMessage('The selected file is too large. The current server upload limit is 5 MB.');
+      setMessage('The selected file is too large. The current server upload limit is 50 MB.');
       return;
     }
 
@@ -246,7 +246,7 @@ export default function Documents() {
     }
     if (nextFile.size > MAX_UPLOAD_BYTES) {
       setUploadFile(null);
-      setUploadMessage('The selected file is too large. The current server upload limit is 5 MB.');
+      setUploadMessage('The selected file is too large. The current server upload limit is 50 MB.');
       return;
     }
     setUploadMessage('');
@@ -431,27 +431,11 @@ export default function Documents() {
                     <button
                       type="button"
                       className={`${ghostButtonClassName} ${smallButtonClassName}`}
-                      onClick={() => previewDocument(row.id)}
-                    >
-                      View
-                    </button>
-
-                    <button
-                      type="button"
-                      className={`${ghostButtonClassName} ${smallButtonClassName}`}
                       onClick={() =>
                         downloadDocument(row.id, row.file_name ?? `${row.title}.pdf`)
                       }
                     >
                       Download
-                    </button>
-
-                    <button
-                      type="button"
-                      className={`${ghostButtonClassName} ${smallButtonClassName}`}
-                      onClick={() => printDocument(row.id)}
-                    >
-                      Print
                     </button>
 
                     {canEdit ? (
@@ -498,7 +482,7 @@ export default function Documents() {
           onSubmit={handleUploadSubmit}
           submitting={uploading}
           submitLabel="Upload Document"
-          fileHelpText="Maximum file size is 5 MB. Supported formats: PDF, DOCX, XLSX, PPT, JPG, and PNG."
+          fileHelpText="Maximum file size is 50 MB. Supported formats: PDF, DOCX, XLSX, PPT, JPG, and PNG."
         />
       </Modal>
 

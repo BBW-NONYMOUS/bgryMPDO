@@ -42,6 +42,20 @@ class DashboardController extends Controller
 
         $recentActivity = $recentActivityQuery->limit(5)->get();
 
+        $statusCounts = (clone $visibleDocuments)
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $topCategories = (clone $visibleDocuments)
+            ->join('categories', 'documents.category_id', '=', 'categories.id')
+            ->selectRaw('categories.name, count(documents.id) as total')
+            ->groupBy('categories.id', 'categories.name')
+            ->orderByDesc('total')
+            ->limit(6)
+            ->get()
+            ->map(fn ($item) => ['name' => $item->name, 'count' => (int) $item->total]);
+
         return response()->json([
             'counts' => [
                 'documents' => (clone $visibleDocuments)->count(),
@@ -49,6 +63,8 @@ class DashboardController extends Controller
                 'categories' => Category::count(),
                 'barangays' => Barangay::count(),
             ],
+            'status_counts' => $statusCounts,
+            'top_categories' => $topCategories,
             'recent_documents' => DocumentResource::collection($recentDocuments)->resolve(),
             'recent_activity' => ActivityLogResource::collection($recentActivity)->resolve(),
         ]);

@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom';
+import { useEffect } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
 const navigation = [
@@ -7,7 +8,6 @@ const navigation = [
     items: [
       { to: '/dashboard', label: 'Dashboard', icon: 'dashboard', roles: ['admin', 'staff', 'barangay'] },
       { to: '/documents', label: 'Documents', icon: 'documents', roles: ['admin', 'staff', 'barangay'] },
-      { to: '/documents/upload', label: 'Upload Document', icon: 'upload', roles: ['admin', 'staff'] },
       { to: '/profile', label: 'My Profile', icon: 'profile', roles: ['admin', 'staff', 'barangay'] },
     ],
   },
@@ -23,11 +23,10 @@ const navigation = [
   },
 ];
 
-function SidebarIcon({ name, className = 'size-4.5' }) {
+function SidebarIcon({ name, className = 'size-[18px]' }) {
   const paths = {
     dashboard: 'M3 11.5 12 4l9 7.5v7a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z M9 20v-6h6v6',
     documents: 'M7 3.75h7.5L19.25 8.5v11A1.75 1.75 0 0 1 17.5 21h-10A1.75 1.75 0 0 1 5.75 19.5v-14A1.75 1.75 0 0 1 7.5 3.75z M14 3.75V8.5h4.75 M8.75 12h7.5 M8.75 15.5h7.5',
-    upload: 'M12 16.25V7.75 M8.5 11.25 12 7.75l3.5 3.5 M5.75 18.25h12.5',
     categories: 'M5 6.5h14 M5 12h14 M5 17.5h14',
     barangays: 'M4.75 18.25h14.5 M7.5 18.25V8.75l4.5-3 4.5 3v9.5 M10 18.25v-4.5h4v4.5',
     users: 'M12 12a3.25 3.25 0 1 0 0-6.5 3.25 3.25 0 0 0 0 6.5z M5.5 19.5a6.5 6.5 0 0 1 13 0',
@@ -43,7 +42,7 @@ function SidebarIcon({ name, className = 'size-4.5' }) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.8"
+      strokeWidth="1.75"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
@@ -53,8 +52,25 @@ function SidebarIcon({ name, className = 'size-4.5' }) {
   );
 }
 
-export default function Sidebar() {
+export default function Sidebar({ open = false, onClose }) {
   const { user, logout } = useAuth();
+  const { pathname } = useLocation();
+
+  // Auto-close drawer when navigating on mobile/tablet
+  useEffect(() => {
+    onClose?.();
+  }, [pathname]);
+
+  // Lock body scroll when mobile drawer is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [open]);
+
   const visibleSections = navigation
     .map((group) => ({
       ...group,
@@ -66,84 +82,138 @@ export default function Sidebar() {
   const roleLabel = user?.role
     ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
     : 'User';
+  const userInitial = user?.name?.slice(0, 1)?.toUpperCase() ?? 'U';
 
   return (
-    <aside className="flex min-h-auto flex-col border-b border-slate-700/60 bg-slate-900 p-4 lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:h-screen lg:w-66 lg:overflow-y-auto lg:border-b-0 lg:border-r lg:border-r-slate-700/60">
-      <div className="flex flex-1 flex-col gap-6">
+    <>
+      {/* Backdrop — mobile/tablet only */}
+      <div
+        className={[
+          'fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 lg:hidden',
+          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
+        ].join(' ')}
+        aria-hidden="true"
+        onClick={onClose}
+      />
 
-        {/* Brand */}
-        <div className="flex items-center gap-3 rounded-xl border border-slate-700/50 bg-slate-800/70 px-3 py-3">
-          <div className="grid size-10 flex-shrink-0 place-items-center rounded-xl bg-linear-to-br from-blue-500 to-blue-700 text-sm font-bold tracking-wide text-white shadow-[0_4px_12px_rgba(37,99,235,0.45)]">
-            MP
-          </div>
-          <div className="min-w-0">
-            <strong className="block truncate text-sm font-bold text-white">MPDO Archiving</strong>
-            <span className="block truncate text-[11px] text-slate-400">Document Management</span>
-          </div>
-        </div>
+      {/* Sidebar panel */}
+      <aside
+        className={[
+          // Base — mobile/tablet: fixed overlay drawer
+          'fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-slate-950 transition-transform duration-300 ease-in-out',
+          // Desktop: always visible, narrower, lower z
+          'lg:z-30 lg:w-66 lg:translate-x-0',
+          // Slide state for mobile/tablet
+          open ? 'translate-x-0 shadow-2xl shadow-slate-900/60' : '-translate-x-full',
+        ].join(' ')}
+      >
+        <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-4">
 
-        {/* Navigation */}
-        {visibleSections.map((group) => (
-          <div key={group.section} className="grid gap-1.5">
-            <p className="px-3 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">
-              {group.section}
-            </p>
-            <nav className="grid gap-0.5">
-              {group.items.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    [
-                      'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150',
-                      isActive
-                        ? 'border border-blue-500/25 bg-blue-600/20 text-blue-400'
-                        : 'border border-transparent text-slate-400 hover:border-slate-700/50 hover:bg-slate-800 hover:text-slate-200',
-                    ].join(' ')
-                  }
-                >
-                  <SidebarIcon name={item.icon} />
-                  <span>{item.label}</span>
-                </NavLink>
-              ))}
-            </nav>
-          </div>
-        ))}
-      </div>
-
-      {/* User footer */}
-      <div className="mt-6 grid gap-3 border-t border-slate-700/50 pt-4">
-        <div className="flex items-center gap-3 rounded-xl bg-slate-800/60 px-3 py-2.5">
-          {user?.profile_photo_url ? (
-            <img
-              src={user.profile_photo_url}
-              alt="Profile"
-              className="size-9 flex-shrink-0 rounded-full border border-slate-700/50 object-cover"
-            />
-          ) : (
-            <div className="grid size-9 flex-shrink-0 place-items-center rounded-full bg-linear-to-br from-blue-500 to-blue-700 text-sm font-bold text-white shadow-[0_2px_8px_rgba(37,99,235,0.4)]">
-              {user?.name?.slice(0, 1)?.toUpperCase() ?? 'U'}
+          {/* Brand + mobile close button */}
+          <div className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 px-3.5 py-3">
+            <div className="relative grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-[13px] font-bold tracking-wide text-white shadow-lg shadow-blue-900/40">
+              <span>MP</span>
+              <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-slate-950 bg-emerald-500" />
             </div>
-          )}
-          <div className="min-w-0">
-            <strong className="block truncate text-sm font-semibold text-white">
-              {user?.name ?? 'Archive User'}
-            </strong>
-            <p className="truncate text-xs text-slate-400">
-              {roleLabel} &middot; {userScope}
-            </p>
+            <div className="min-w-0 flex-1">
+              <strong className="block truncate text-[13px] font-bold tracking-tight text-white">MPDO Archiving</strong>
+              <span className="block truncate text-[11px] text-slate-500">Document Management</span>
+            </div>
+            {/* Close button — mobile/tablet only */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="grid size-8 shrink-0 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-300 lg:hidden"
+              aria-label="Close sidebar"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-4" aria-hidden="true">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
           </div>
+
+          {/* Navigation */}
+          {visibleSections.map((group) => (
+            <div key={group.section} className="grid gap-1">
+              <div className="flex items-center gap-2 px-2 pb-0.5">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+                  {group.section}
+                </span>
+                <span className="h-px flex-1 bg-slate-800" />
+              </div>
+              <nav className="grid gap-0.5">
+                {group.items.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      [
+                        'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150',
+                        isActive
+                          ? 'bg-blue-600/15 text-blue-400'
+                          : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200',
+                      ].join(' ')
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        {isActive && (
+                          <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-blue-500" />
+                        )}
+                        <span className={[
+                          'grid size-8 shrink-0 place-items-center rounded-lg transition-colors duration-150',
+                          isActive
+                            ? 'bg-blue-600/20 text-blue-400'
+                            : 'text-slate-500 group-hover:bg-slate-700/60 group-hover:text-slate-300',
+                        ].join(' ')}>
+                          <SidebarIcon name={item.icon} />
+                        </span>
+                        <span className="truncate">{item.label}</span>
+                      </>
+                    )}
+                  </NavLink>
+                ))}
+              </nav>
+            </div>
+          ))}
         </div>
 
-        <button
-          type="button"
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.35)] transition hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-[0_6px_18px_rgba(37,99,235,0.45)]"
-          onClick={logout}
-        >
-          <SidebarIcon name="logout" className="size-4" />
-          <span>Sign Out</span>
-        </button>
-      </div>
-    </aside>
+        {/* User footer */}
+        <div className="space-y-2 border-t border-slate-800 p-4">
+          <div className="flex items-center gap-3 rounded-xl bg-slate-900/60 px-3 py-2.5">
+            {user?.profile_photo_url ? (
+              <img
+                src={user.profile_photo_url}
+                alt="Profile"
+                className="size-8 shrink-0 rounded-full border border-slate-700/60 object-cover"
+              />
+            ) : (
+              <div className="grid size-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-[12px] font-bold text-white shadow-md shadow-blue-900/30">
+                {userInitial}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <strong className="block truncate text-[13px] font-semibold leading-tight text-slate-100">
+                {user?.name ?? 'Archive User'}
+              </strong>
+              <p className="truncate text-[11px] text-slate-500">
+                {roleLabel} &middot; {userScope}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="flex w-full items-center gap-2.5 rounded-xl border border-slate-800 px-3 py-2.5 text-[13px] font-medium text-slate-400 transition-all duration-150 hover:border-red-900/50 hover:bg-red-950/40 hover:text-red-400"
+            onClick={logout}
+          >
+            <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-slate-800 bg-slate-900/60 text-slate-500">
+              <SidebarIcon name="logout" />
+            </span>
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </aside>
+    </>
   );
 }

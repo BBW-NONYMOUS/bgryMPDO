@@ -7,7 +7,7 @@ import DocumentForm from '../components/forms/DocumentForm';
 import { alertErrorClassName, pageStackClassName, pageTitleClassName, panelHeaderClassName, sectionEyebrowClassName } from '../styles/uiClasses';
 import { extractCollection, buildDocumentFormData } from '../utils/apiData';
 
-const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 
 const initialValues = {
   title: '',
@@ -76,7 +76,7 @@ export default function UploadDocument() {
 
     if (nextFile.size > MAX_UPLOAD_BYTES) {
       setFile(null);
-      setMessage('The selected file is too large. The current server upload limit is 5 MB.');
+      setMessage('The selected file is too large. The current server upload limit is 50 MB.');
       return;
     }
 
@@ -105,7 +105,7 @@ export default function UploadDocument() {
         onFileChange={handleFileChange}
         onSubmit={handleSubmit}
         submitting={submitting}
-        fileHelpText="Maximum file size is 5 MB. Supported formats: PDF, DOCX, XLSX, PPT, JPG, and PNG."
+        fileHelpText="Maximum file size is 50 MB. Supported formats: PDF, DOCX, XLSX, PPT, JPG, and PNG."
       />
     </div>
   );

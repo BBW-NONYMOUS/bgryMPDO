@@ -25,36 +25,70 @@ const descriptionMap = {
   '/activity-logs': 'Review the audit trail for uploads, edits, downloads, and logins.',
 };
 
-export default function Navbar() {
+const roleColorMap = {
+  admin: 'bg-violet-500/10 text-violet-600 border-violet-200/70',
+  staff: 'bg-blue-500/10 text-blue-600 border-blue-200/70',
+  barangay: 'bg-emerald-500/10 text-emerald-600 border-emerald-200/70',
+};
+
+function HamburgerIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-5" aria-hidden="true">
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  );
+}
+
+export default function Navbar({ onMenuClick }) {
   const { pathname } = useLocation();
   const { user } = useAuth();
-  const userScope = user?.barangay?.name
-    ? `${user.role} · ${user.barangay.name}`
-    : user?.role;
+  const scopeLabel = user?.barangay?.name
+    ? user.barangay.name
+    : 'Municipal Access';
+  const roleLabel = user?.role
+    ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
+    : null;
+  const roleBadgeColor = roleColorMap[user?.role] ?? 'bg-zinc-100 text-zinc-600 border-zinc-200';
 
   return (
-    <header className="border-b border-zinc-200 bg-white px-4 py-5 sm:px-6 lg:px-8">
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+    <header className="sticky top-0 z-20 border-b border-zinc-200/80 bg-white/90 px-4 py-4 backdrop-blur-md sm:px-6 lg:px-8">
+      <div className="flex items-start gap-3 sm:items-center">
+
+        {/* Hamburger — mobile & tablet only */}
+        <button
+          type="button"
+          onClick={onMenuClick}
+          className="mt-1 grid size-9 shrink-0 place-items-center rounded-xl border border-zinc-200 bg-white text-zinc-600 shadow-sm transition-colors hover:bg-zinc-50 hover:text-zinc-900 lg:hidden"
+          aria-label="Open navigation"
+        >
+          <HamburgerIcon />
+        </button>
+
+        {/* Page title + description */}
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="size-1.5 rounded-full bg-blue-500" />
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-blue-500">
+            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-blue-500/80">
               MPDO Archiving System
             </p>
           </div>
-          <h1 className="mt-1 text-[clamp(1.5rem,3vw,2rem)] font-bold leading-tight tracking-[-0.03em] text-zinc-900">
+          <h1 className="mt-0.5 text-[clamp(1.25rem,3vw,1.85rem)] font-bold leading-tight tracking-[-0.035em] text-zinc-900">
             {titleMap[pathname] ?? 'Workspace'}
           </h1>
-          <p className="mt-1 max-w-2xl text-sm text-zinc-500">
+          <p className="mt-0.5 max-w-2xl text-sm leading-relaxed text-zinc-400">
             {descriptionMap[pathname] ?? 'Manage records, users, and archive operations.'}
           </p>
         </div>
 
-        {userScope ? (
-          <div className="mt-3 flex-shrink-0 sm:mt-0">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-600">
+        {/* Role + scope badges */}
+        {roleLabel ? (
+          <div className="mt-1 flex shrink-0 flex-col items-end gap-1.5 sm:mt-0 sm:flex-row sm:items-center">
+            <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold ${roleBadgeColor}`}>
+              {roleLabel}
+            </span>
+            <span className="hidden items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-[11px] font-medium text-zinc-500 sm:inline-flex">
               <span className="size-1.5 rounded-full bg-emerald-500" />
-              {userScope}
+              {scopeLabel}
             </span>
           </div>
         ) : null}
