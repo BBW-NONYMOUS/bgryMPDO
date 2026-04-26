@@ -3,17 +3,12 @@
 namespace App\Http\Requests\Document;
 
 use App\Models\Document;
+use App\Support\DocumentUploadLimits;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class StoreDocumentRequest extends FormRequest
 {
-    private const APP_MAX_KILOBYTES = 51200;
-
-    private const DEFAULT_MAX_KILOBYTES = self::APP_MAX_KILOBYTES;
-
-    private const SUPPORTED_EXTENSIONS = 'pdf,docx,xlsx,ppt,pptx,jpg,jpeg,png';
-
     public function authorize(): bool
     {
         return true;
@@ -32,13 +27,13 @@ class StoreDocumentRequest extends FormRequest
             'remarks' => ['nullable', 'string'],
             'access_level' => ['required', 'string', Rule::in(Document::allowedAccessLevels())],
             'status' => ['required', 'string', Rule::in(Document::allowedStatuses())],
-            'file' => ['required', 'file', 'mimes:'.self::SUPPORTED_EXTENSIONS, 'max:'.$this->effectiveMaxKilobytes()],
+            'file' => ['required', 'file', 'mimes:'.DocumentUploadLimits::supportedExtensionsRule(), 'max:'.DocumentUploadLimits::effectiveMaxKilobytes()],
         ];
     }
 
     public function messages(): array
     {
-        $maxMegabytes = number_format($this->effectiveMaxKilobytes() / 1024, 0);
+        $maxMegabytes = DocumentUploadLimits::effectiveMaxMegabytes();
 
         return [
             'file.required' => 'Please select a file to upload.',
@@ -46,34 +41,5 @@ class StoreDocumentRequest extends FormRequest
             'file.mimes' => 'Only PDF, DOCX, XLSX, PPT, JPG, and PNG files are supported.',
             'file.max' => "The file is too large. The current server upload limit is {$maxMegabytes} MB.",
         ];
-    }
-
-    private function effectiveMaxKilobytes(): int
-    {
-        $uploadMax = $this->iniSizeToKilobytes((string) ini_get('upload_max_filesize'));
-        $postMax = $this->iniSizeToKilobytes((string) ini_get('post_max_size'));
-
-        return max(1, min(self::APP_MAX_KILOBYTES, $uploadMax, $postMax));
-    }
-
-    private function iniSizeToKilobytes(string $value): int
-    {
-        $value = trim($value);
-
-        if ($value === '') {
-            return self::DEFAULT_MAX_KILOBYTES;
-        }
-
-        $unit = strtolower(substr($value, -1));
-        $number = (float) $value;
-
-        $bytes = match ($unit) {
-            'g' => $number * 1024 * 1024 * 1024,
-            'm' => $number * 1024 * 1024,
-            'k' => $number * 1024,
-            default => (float) $value,
-        };
-
-        return (int) max(1, floor($bytes / 1024));
     }
 }

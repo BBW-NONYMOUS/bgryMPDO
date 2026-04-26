@@ -38,8 +38,12 @@ import {
   formatDate,
   formatDateTime,
 } from '../utils/apiData';
-
-const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
+import {
+  DEFAULT_DOCUMENT_UPLOAD_LIMIT_BYTES,
+  documentFileHelpText,
+  documentFileTooLargeMessage,
+  getDocumentUploadLimitBytes,
+} from '../utils/uploadLimits';
 
 const defaultFilters = {
   search: '',
@@ -104,6 +108,7 @@ export default function Documents() {
   const [barangays, setBarangays] = useState([]);
   const [statusOptions, setStatusOptions] = useState(['draft', 'active', 'archived']);
   const [accessLevelOptions, setAccessLevelOptions] = useState(['admin', 'staff', 'barangay']);
+  const [maxUploadBytes, setMaxUploadBytes] = useState(DEFAULT_DOCUMENT_UPLOAD_LIMIT_BYTES);
   const [filters, setFilters] = useState(defaultFilters);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
@@ -132,6 +137,7 @@ export default function Documents() {
       setBarangays(extractCollection(barangayResponse));
       setStatusOptions(settingsResponse.settings?.document_statuses ?? ['draft', 'active', 'archived']);
       setAccessLevelOptions(settingsResponse.settings?.document_access_levels ?? ['admin', 'staff', 'barangay']);
+      setMaxUploadBytes(getDocumentUploadLimitBytes(settingsResponse));
     }
 
     loadLookups();
@@ -176,9 +182,9 @@ export default function Documents() {
       return;
     }
 
-    if (nextFile.size > MAX_UPLOAD_BYTES) {
+    if (nextFile.size > maxUploadBytes) {
       setSelectedFile(null);
-      setMessage('The selected file is too large. The current server upload limit is 50 MB.');
+      setMessage(documentFileTooLargeMessage(maxUploadBytes));
       return;
     }
 
@@ -244,9 +250,9 @@ export default function Documents() {
       setUploadFile(null);
       return;
     }
-    if (nextFile.size > MAX_UPLOAD_BYTES) {
+    if (nextFile.size > maxUploadBytes) {
       setUploadFile(null);
-      setUploadMessage('The selected file is too large. The current server upload limit is 50 MB.');
+      setUploadMessage(documentFileTooLargeMessage(maxUploadBytes));
       return;
     }
     setUploadMessage('');
@@ -482,7 +488,7 @@ export default function Documents() {
           onSubmit={handleUploadSubmit}
           submitting={uploading}
           submitLabel="Upload Document"
-          fileHelpText="Maximum file size is 50 MB. Supported formats: PDF, DOCX, XLSX, PPT, JPG, and PNG."
+          fileHelpText={documentFileHelpText(maxUploadBytes)}
         />
       </Modal>
 
@@ -502,7 +508,10 @@ export default function Documents() {
           onSubmit={handleEditSubmit}
           submitting={submitting}
           submitLabel="Save Changes"
-          fileHelpText="Leave the file empty to keep the current attachment. Supported formats: PDF, DOCX, XLSX, PPT, JPG, and PNG."
+          fileHelpText={documentFileHelpText(
+            maxUploadBytes,
+            'Leave the file empty to keep the current attachment. Maximum replacement file size is',
+          )}
         />
       </Modal>
     </div>

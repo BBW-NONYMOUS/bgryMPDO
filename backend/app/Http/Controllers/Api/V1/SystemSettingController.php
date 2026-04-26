@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SystemSetting\UpdateSystemSettingRequest;
 use App\Services\SystemSettingsService;
+use App\Support\DocumentUploadLimits;
 use Illuminate\Http\JsonResponse;
 
 class SystemSettingController extends Controller
@@ -39,6 +40,13 @@ class SystemSettingController extends Controller
 
         return response()->json([
             'settings' => $settings,
+            'upload_limits' => [
+                'documents' => [
+                    'max_bytes' => DocumentUploadLimits::effectiveMaxBytes(),
+                    'max_megabytes' => DocumentUploadLimits::effectiveMaxMegabytes(),
+                    'supported_extensions' => DocumentUploadLimits::supportedExtensions(),
+                ],
+            ],
         ]);
     }
 
@@ -55,4 +63,3 @@ class SystemSettingController extends Controller
         ]);
     }
 }
-

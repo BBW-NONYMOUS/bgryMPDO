@@ -32,7 +32,7 @@ class DocumentObserver
         ]);
     }
 
-    public function deleted(Document $document): void
+    public function deleting(Document $document): void
     {
         $this->log('document.deleted', 'Deleted document '.$document->title.'.', $document);
     }

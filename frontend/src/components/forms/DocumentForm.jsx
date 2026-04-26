@@ -29,7 +29,7 @@ export default function DocumentForm({
   statusOptions = ['draft', 'active', 'archived'],
   accessLevelOptions = ['admin', 'staff', 'barangay'],
   submitLabel = 'Save Document',
-  fileHelpText = 'Maximum file size is 50 MB. Supported formats: PDF, DOCX, XLSX, PPT, JPG, and PNG.',
+  fileHelpText = 'Maximum file size is 60 MB. Supported formats: PDF, DOCX, XLSX, PPT, JPG, and PNG.',
 }) {
   return (
     <form

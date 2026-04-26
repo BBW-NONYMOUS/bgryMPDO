@@ -6,8 +6,12 @@ import { getSettings } from '../api/settingsApi';
 import DocumentForm from '../components/forms/DocumentForm';
 import { alertErrorClassName, pageStackClassName, pageTitleClassName, panelHeaderClassName, sectionEyebrowClassName } from '../styles/uiClasses';
 import { extractCollection, buildDocumentFormData } from '../utils/apiData';
-
-const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
+import {
+  DEFAULT_DOCUMENT_UPLOAD_LIMIT_BYTES,
+  documentFileHelpText,
+  documentFileTooLargeMessage,
+  getDocumentUploadLimitBytes,
+} from '../utils/uploadLimits';
 
 const initialValues = {
   title: '',
@@ -30,6 +34,7 @@ export default function UploadDocument() {
   const [barangays, setBarangays] = useState([]);
   const [statusOptions, setStatusOptions] = useState(['draft', 'active', 'archived']);
   const [accessLevelOptions, setAccessLevelOptions] = useState(['admin', 'staff', 'barangay']);
+  const [maxUploadBytes, setMaxUploadBytes] = useState(DEFAULT_DOCUMENT_UPLOAD_LIMIT_BYTES);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -45,6 +50,7 @@ export default function UploadDocument() {
       setBarangays(extractCollection(barangayResponse));
       setStatusOptions(settingsResponse.settings?.document_statuses ?? ['draft', 'active', 'archived']);
       setAccessLevelOptions(settingsResponse.settings?.document_access_levels ?? ['admin', 'staff', 'barangay']);
+      setMaxUploadBytes(getDocumentUploadLimitBytes(settingsResponse));
     }
 
     loadLookups();
@@ -74,9 +80,9 @@ export default function UploadDocument() {
       return;
     }
 
-    if (nextFile.size > MAX_UPLOAD_BYTES) {
+    if (nextFile.size > maxUploadBytes) {
       setFile(null);
-      setMessage('The selected file is too large. The current server upload limit is 50 MB.');
+      setMessage(documentFileTooLargeMessage(maxUploadBytes));
       return;
     }
 
@@ -105,7 +111,7 @@ export default function UploadDocument() {
         onFileChange={handleFileChange}
         onSubmit={handleSubmit}
         submitting={submitting}
-        fileHelpText="Maximum file size is 50 MB. Supported formats: PDF, DOCX, XLSX, PPT, JPG, and PNG."
+        fileHelpText={documentFileHelpText(maxUploadBytes)}
       />
     </div>
   );

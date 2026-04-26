@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import Spinner from '../components/common/Spinner';
 import loginBackground from '../assets/image/bgV1.png';
+import Logo from '../assets/image/Logo.png';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -55,16 +56,9 @@ export default function Login() {
           {/* Card header accent */}
           <div className="border-b border-white/10 bg-linear-to-r from-blue-600/30 to-blue-800/20 px-8 py-6 text-center">
             {/* MPDO Icon */}
-            <div className="mx-auto mb-4 grid size-16 place-items-center rounded-2xl bg-linear-to-br from-blue-500 to-blue-700 shadow-[0_8px_24px_rgba(37,99,235,0.50)]">
-              <svg viewBox="0 0 40 40" className="size-9" aria-hidden="true">
-                <rect x="4" y="16" width="32" height="20" rx="2" fill="white" fillOpacity="0.15" />
-                <rect x="8" y="18" width="6" height="6" rx="1" fill="white" fillOpacity="0.8" />
-                <rect x="17" y="18" width="6" height="6" rx="1" fill="white" fillOpacity="0.8" />
-                <rect x="26" y="18" width="6" height="6" rx="1" fill="white" fillOpacity="0.8" />
-                <rect x="14" y="28" width="12" height="8" rx="1" fill="white" fillOpacity="0.9" />
-                <path d="M20 4 L34 14 H6 Z" fill="white" fillOpacity="0.9" />
-              </svg>
-            </div>
+            <div className="mx-auto mb-4 grid size-15 place-items-center rounded-3xl bg-linear-to-br from-blue-500 to-blue-700 shadow-[0_8px_24px_rgba(37,99,235,0.50)]">
+                <img src={Logo} alt="MPDO Icon" className="h-15 w-15 rounded-3xl" />
+            </div>  
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-blue-300">
               MPDO Archiving System
             </p>
