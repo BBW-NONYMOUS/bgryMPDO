@@ -52,7 +52,9 @@ class DocumentController extends Controller
     {
         $this->authorize('create', Document::class);
 
-        $fileData = $this->documentFileService->store($request->file('file'));
+        /** @var \Illuminate\Http\UploadedFile $file */
+        $file = $request->file('file');
+        $fileData = $this->documentFileService->store($file);
 
         $document = Document::create([
             ...$request->validated(),
@@ -68,7 +70,7 @@ class DocumentController extends Controller
         ], 201);
     }
 
-    public function show(Request $request, Document $document): JsonResponse
+    public function show(Document $document): JsonResponse
     {
         $this->authorize('view', $document);
 
@@ -90,9 +92,11 @@ class DocumentController extends Controller
         if ($request->hasFile('file')) {
             $oldPath = $document->file_path;
             $oldDisk = $document->resolvedStorageDisk();
+            /** @var \Illuminate\Http\UploadedFile $uploadedFile */
+            $uploadedFile = $request->file('file');
             $data = [
                 ...$data,
-                ...$this->documentFileService->store($request->file('file')),
+                ...$this->documentFileService->store($uploadedFile),
             ];
         }
 
@@ -128,6 +132,7 @@ class DocumentController extends Controller
     {
         $this->authorize('download', $document);
 
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
         $disk = Storage::disk($document->resolvedStorageDisk());
 
         abort_unless($disk->exists($document->file_path), 404, 'Stored file not found.');
@@ -152,6 +157,7 @@ class DocumentController extends Controller
     {
         $this->authorize('view', $document);
 
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
         $disk = Storage::disk($document->resolvedStorageDisk());
 
         abort_unless($disk->exists($document->file_path), 404, 'Stored file not found.');
