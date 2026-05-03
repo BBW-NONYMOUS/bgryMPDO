@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getActivityLogs } from '../api/activityLogApi';
 import { downloadActivityLogsReport } from '../api/reportApi';
+import LoadingState from '../components/common/LoadingState';
 import SearchFilterBar from '../components/common/SearchFilterBar';
 import DataTable from '../components/tables/DataTable';
 import {
@@ -36,14 +37,20 @@ function InfoText({ children, muted = false }) {
 export default function ActivityLogs() {
   const [logs, setLogs] = useState([]);
   const [filters, setFilters] = useState(defaultFilters);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadLogs(filters);
   }, []);
 
   async function loadLogs(params = {}) {
-    const response = await getActivityLogs(params);
-    setLogs(extractCollection(response));
+    setLoading(true);
+    try {
+      const response = await getActivityLogs(params);
+      setLogs(extractCollection(response));
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -82,6 +89,9 @@ export default function ActivityLogs() {
           )}
         />
 
+        {loading ? (
+          <LoadingState title="Loading activity logs" description="Fetching system events and audit records." />
+        ) : (
         <DataTable
           columns={[
             {
@@ -140,6 +150,7 @@ export default function ActivityLogs() {
           emptyTitle="No activity logs found"
           emptyDescription="Audit records will appear here once users begin interacting with the platform."
         />
+        )}
       </article>
     </div>
   );

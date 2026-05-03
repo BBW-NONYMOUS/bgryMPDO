@@ -14,6 +14,11 @@ import {
   primaryButtonClassName,
   sectionEyebrowClassName,
 } from '../styles/uiClasses';
+import {
+  CANONICAL_DOCUMENT_TYPES,
+  documentTypesFromSettings,
+  labelDocumentType,
+} from '../utils/documentTypes';
 
 function StatusChip({ label, onRemove }) {
   return (
@@ -70,10 +75,14 @@ export default function Settings() {
   const [settings, setSettings] = useState({
     document_statuses: [],
     document_access_levels: [],
+    document_types: [],
+    classifications: [],
   });
 
   const [newStatus, setNewStatus] = useState('');
   const [newAccessLevel, setNewAccessLevel] = useState('');
+  const [newDocumentType, setNewDocumentType] = useState('');
+  const [newClassification, setNewClassification] = useState('');
 
   const [dataStatus, setDataStatus] = useState({ type: '', message: '' });
   const [dataWorking, setDataWorking] = useState(false);
@@ -88,6 +97,8 @@ export default function Settings() {
         setSettings({
           document_statuses: response.settings?.document_statuses ?? [],
           document_access_levels: response.settings?.document_access_levels ?? [],
+          document_types: documentTypesFromSettings(response.settings).map((type) => type.value),
+          classifications: response.settings?.classifications ?? [],
         });
       } finally {
         setLoading(false);
@@ -97,9 +108,17 @@ export default function Settings() {
   }, []);
 
   const canSave = useMemo(
-    () => settings.document_statuses.length > 0 && settings.document_access_levels.length > 0,
+    () =>
+      settings.document_statuses.length > 0 &&
+      settings.document_access_levels.length > 0 &&
+      settings.document_types.length > 0,
     [settings],
   );
+
+  const availableDocumentTypes = useMemo(() => {
+    const selected = new Set(settings.document_types);
+    return CANONICAL_DOCUMENT_TYPES.filter((type) => !selected.has(type.value));
+  }, [settings.document_types]);
 
   async function handleSave() {
     setSaving(true);
@@ -108,6 +127,8 @@ export default function Settings() {
       await Promise.all([
         updateSetting('document_statuses', settings.document_statuses),
         updateSetting('document_access_levels', settings.document_access_levels),
+        updateSetting('document_types', settings.document_types),
+        updateSetting('classifications', settings.classifications),
       ]);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -156,7 +177,7 @@ export default function Settings() {
     <div className={pageStackClassName}>
 
       {/* ── System Settings ─────────────────────────────────────── */}
-      <article className={`${panelClassName} space-y-6`}>
+      <article id="roles-permissions" className={`${panelClassName} scroll-mt-24 space-y-6`}>
         <div className={panelHeaderBetweenClassName}>
           <div className="flex items-start gap-4">
             <SectionIcon color="blue">
@@ -312,6 +333,124 @@ export default function Settings() {
                   if (!v) return;
                   setSettings((c) => ({ ...c, document_access_levels: Array.from(new Set([...c.document_access_levels, v])) }));
                   setNewAccessLevel('');
+                }}
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="grid gap-5 lg:grid-cols-2">
+          <div id="document-types" className="scroll-mt-24 rounded-2xl border border-zinc-100 bg-gradient-to-br from-emerald-50/60 to-white p-6 shadow-sm">
+            <div className="mb-1 flex items-center gap-3">
+              <SectionIcon color="emerald">
+                <svg viewBox="0 0 20 20" fill="currentColor" className="size-4">
+                  <path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 11.378 2H4.5Zm2.25 8.5a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Zm0 3a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Z" clipRule="evenodd" />
+                </svg>
+              </SectionIcon>
+              <div>
+                <h3 className="text-sm font-semibold text-zinc-900">Document Type Options</h3>
+                <p className="text-xs text-zinc-500">Reference list for PDF, DOCX, XLSX, PPT, JPG, and PNG records.</p>
+              </div>
+            </div>
+
+            <div className="mt-4 flex min-h-10 flex-wrap gap-2">
+              {settings.document_types.length === 0 ? (
+                <p className="text-xs italic text-zinc-400">No document types yet.</p>
+              ) : settings.document_types.map((type) => (
+                <StatusChip
+                  key={type}
+                  label={labelDocumentType(type)}
+                  onRemove={() =>
+                    setSettings((c) => ({
+                      ...c,
+                      document_types: c.document_types.filter((i) => i !== type),
+                    }))
+                  }
+                />
+              ))}
+            </div>
+
+            <div className="mt-5 flex items-end gap-2">
+              <label className="grid flex-1 gap-1.5">
+                <span className={fieldLabelClassName}>Add Document Type</span>
+                <select
+                  className={inputClassName}
+                  value={newDocumentType}
+                  onChange={(e) => setNewDocumentType(e.target.value)}
+                  disabled={availableDocumentTypes.length === 0}
+                >
+                  <option value="">Select supported type</option>
+                  {availableDocumentTypes.map((type) => (
+                    <option key={type.value} value={type.value}>{type.label}</option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                className={primaryButtonClassName}
+                disabled={!newDocumentType}
+                onClick={() => {
+                  const v = newDocumentType;
+                  if (!v) return;
+                  setSettings((c) => ({ ...c, document_types: Array.from(new Set([...c.document_types, v])) }));
+                  setNewDocumentType('');
+                }}
+              >
+                Add
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-zinc-100 bg-gradient-to-br from-amber-50/60 to-white p-6 shadow-sm">
+            <div className="mb-1 flex items-center gap-3">
+              <SectionIcon color="amber">
+                <svg viewBox="0 0 20 20" fill="currentColor" className="size-4">
+                  <path fillRule="evenodd" d="M3 4.75A1.75 1.75 0 0 1 4.75 3h10.5A1.75 1.75 0 0 1 17 4.75v10.5A1.75 1.75 0 0 1 15.25 17H4.75A1.75 1.75 0 0 1 3 15.25V4.75ZM6.25 7a.75.75 0 0 0 0 1.5h7.5a.75.75 0 0 0 0-1.5h-7.5Zm0 3.25a.75.75 0 0 0 0 1.5h4.5a.75.75 0 0 0 0-1.5h-4.5Z" clipRule="evenodd" />
+                </svg>
+              </SectionIcon>
+              <div>
+                <h3 className="text-sm font-semibold text-zinc-900">Classification Options</h3>
+                <p className="text-xs text-zinc-500">Additional labels for archive grouping and monitoring.</p>
+              </div>
+            </div>
+
+            <div className="mt-4 flex min-h-10 flex-wrap gap-2">
+              {settings.classifications.length === 0 ? (
+                <p className="text-xs italic text-zinc-400">No classifications yet.</p>
+              ) : settings.classifications.map((classification) => (
+                <AccessChip
+                  key={classification}
+                  label={classification}
+                  onRemove={() =>
+                    setSettings((c) => ({
+                      ...c,
+                      classifications: c.classifications.filter((i) => i !== classification),
+                    }))
+                  }
+                />
+              ))}
+            </div>
+
+            <div className="mt-5 flex items-end gap-2">
+              <label className="grid flex-1 gap-1.5">
+                <span className={fieldLabelClassName}>Add Classification</span>
+                <input
+                  className={inputClassName}
+                  value={newClassification}
+                  onChange={(e) => setNewClassification(e.target.value)}
+                  placeholder="e.g., confidential"
+                />
+              </label>
+              <button
+                type="button"
+                className={primaryButtonClassName}
+                onClick={() => {
+                  const v = newClassification.trim();
+                  if (!v) return;
+                  setSettings((c) => ({ ...c, classifications: Array.from(new Set([...c.classifications, v])) }));
+                  setNewClassification('');
                 }}
               >
                 Add

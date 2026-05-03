@@ -44,8 +44,26 @@ export async function previewDocument(id) {
   return openBlobFromEndpoint(`/documents/${id}/preview`);
 }
 
+export async function createDocumentPreviewUrl(id) {
+  const response = await api.get(`/documents/${id}/preview`, {
+    responseType: 'blob',
+  });
+
+  const contentType = response.headers?.['content-type'];
+  const blob = response.data instanceof Blob
+    ? response.data
+    : new Blob([response.data], contentType ? { type: contentType } : undefined);
+
+  return window.URL.createObjectURL(blob);
+}
+
 export async function printDocument(id) {
   return printBlobFromEndpoint(`/documents/${id}/preview`);
+}
+
+export async function updateDocumentStatus(id, status) {
+  const response = await api.patch(`/documents/${id}/status`, { status });
+  return response.data;
 }
 
 export async function deleteDocument(id) {

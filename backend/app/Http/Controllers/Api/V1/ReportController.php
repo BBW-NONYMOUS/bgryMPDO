@@ -27,6 +27,7 @@ class ReportController extends Controller
                 'barangay_id',
                 'uploaded_by',
                 'status',
+                'file_type',
                 'date_from',
                 'date_to',
                 'sort',
@@ -46,9 +47,20 @@ class ReportController extends Controller
             $document->created_at?->toDateTimeString(),
         ])->all();
 
+        $headers = ['Title', 'Document Number', 'Category', 'Barangay', 'Document Date', 'Status', 'Access Level', 'File Type', 'Uploaded By', 'Uploaded At'];
+
+        if ($request->string('format')->toString() === 'xls') {
+            return $this->streamCsv(
+                filename: 'documents-report.xls',
+                headers: $headers,
+                rows: $rows,
+                contentType: 'application/vnd.ms-excel; charset=UTF-8',
+            );
+        }
+
         return $this->streamCsv(
             filename: 'documents-report.csv',
-            headers: ['Title', 'Document Number', 'Category', 'Barangay', 'Document Date', 'Status', 'Access Level', 'File Type', 'Uploaded By', 'Uploaded At'],
+            headers: $headers,
             rows: $rows,
         );
     }
@@ -139,7 +151,7 @@ class ReportController extends Controller
         );
     }
 
-    private function streamCsv(string $filename, array $headers, array $rows): StreamedResponse
+    private function streamCsv(string $filename, array $headers, array $rows, string $contentType = 'text/csv; charset=UTF-8'): StreamedResponse
     {
         return response()->streamDownload(function () use ($headers, $rows): void {
             $handle = fopen('php://output', 'wb');
@@ -156,7 +168,7 @@ class ReportController extends Controller
 
             fclose($handle);
         }, $filename, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Type' => $contentType,
         ]);
     }
 }

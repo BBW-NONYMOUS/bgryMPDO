@@ -4,6 +4,7 @@ import SearchFilterBar from '../components/common/SearchFilterBar';
 import DataTable from '../components/tables/DataTable';
 import { createBarangay, deleteBarangay, getBarangays, updateBarangay } from '../api/lookupApi';
 import {
+  alertErrorClassName,
   dangerButtonClassName,
   fieldClassName,
   fieldFullClassName,
@@ -37,6 +38,8 @@ export default function Barangays() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(blankBarangay);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     loadBarangays(filters);
@@ -50,6 +53,7 @@ export default function Barangays() {
   function openCreate() {
     setEditing(null);
     setForm(blankBarangay);
+    setFormError('');
     setOpen(true);
   }
 
@@ -60,29 +64,47 @@ export default function Barangays() {
       description: barangay.description ?? '',
       is_active: Boolean(barangay.is_active),
     });
+    setFormError('');
     setOpen(true);
+  }
+
+  function closeModal() {
+    setOpen(false);
+    setFormError('');
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
+    setSubmitting(true);
+    setFormError('');
 
-    if (editing) {
-      await updateBarangay(editing.id, form);
-    } else {
-      await createBarangay(form);
+    try {
+      if (editing) {
+        await updateBarangay(editing.id, form);
+      } else {
+        await createBarangay(form);
+      }
+
+      closeModal();
+      await loadBarangays(filters);
+    } catch (error) {
+      const validationErrors = error.response?.data?.errors;
+      const first = validationErrors ? Object.values(validationErrors).flat()[0] : null;
+      setFormError(first ?? error.response?.data?.message ?? 'Failed to save barangay. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
-
-    setOpen(false);
-    await loadBarangays(filters);
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Delete this barangay?')) {
-      return;
-    }
+    if (!window.confirm('Delete this barangay?')) return;
 
-    await deleteBarangay(id);
-    await loadBarangays(filters);
+    try {
+      await deleteBarangay(id);
+      await loadBarangays(filters);
+    } catch (error) {
+      window.alert(error.response?.data?.message ?? 'Failed to delete barangay.');
+    }
   }
 
   return (
@@ -140,11 +162,18 @@ export default function Barangays() {
         />
       </article>
 
-      <Modal title={editing ? 'Edit Barangay' : 'Add Barangay'} open={open} onClose={() => setOpen(false)}>
+      <Modal title={editing ? 'Edit Barangay' : 'Add Barangay'} open={open} onClose={closeModal}>
+        {formError && <div className={`${alertErrorClassName} mb-4`}>{formError}</div>}
+
         <form className={formGridClassName} onSubmit={handleSubmit}>
           <label className={`${fieldClassName} ${fieldFullClassName}`}>
             <span className={fieldLabelClassName}>Barangay Name</span>
-            <input className={inputClassName} value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} required />
+            <input
+              className={inputClassName}
+              value={form.name}
+              onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+              required
+            />
           </label>
           <label className={`${fieldClassName} ${fieldFullClassName}`}>
             <span className={fieldLabelClassName}>Description</span>
@@ -157,14 +186,18 @@ export default function Barangays() {
           </label>
           <label className={fieldClassName}>
             <span className={fieldLabelClassName}>Status</span>
-            <select className={selectClassName} value={String(form.is_active)} onChange={(event) => setForm((current) => ({ ...current, is_active: event.target.value === 'true' }))}>
+            <select
+              className={selectClassName}
+              value={String(form.is_active)}
+              onChange={(event) => setForm((current) => ({ ...current, is_active: event.target.value === 'true' }))}
+            >
               <option value="true">Active</option>
               <option value="false">Inactive</option>
             </select>
           </label>
           <div className={formActionsClassName}>
-            <button type="submit" className={primaryButtonClassName}>
-              Save Barangay
+            <button type="submit" className={primaryButtonClassName} disabled={submitting}>
+              {submitting ? 'Saving...' : editing ? 'Update Barangay' : 'Save Barangay'}
             </button>
           </div>
         </form>

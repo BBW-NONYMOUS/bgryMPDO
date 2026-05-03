@@ -18,6 +18,16 @@ class SystemSettingController extends Controller
 
     public const KEY_CLASSIFICATIONS = 'classifications';
 
+    public const DEFAULT_DOCUMENT_TYPES = [
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'image/jpeg',
+        'image/png',
+    ];
+
     public function __construct(
         private readonly SystemSettingsService $systemSettingsService,
     ) {
@@ -28,14 +38,15 @@ class SystemSettingController extends Controller
         $defaults = [
             self::KEY_DOCUMENT_STATUSES => \App\Models\Document::defaultAllowedStatuses(),
             self::KEY_DOCUMENT_ACCESS_LEVELS => \App\Models\Document::defaultAllowedAccessLevels(),
-            self::KEY_DOCUMENT_TYPES => [],
+            self::KEY_DOCUMENT_TYPES => self::DEFAULT_DOCUMENT_TYPES,
             self::KEY_CLASSIFICATIONS => [],
         ];
 
         $settings = [];
 
         foreach ($defaults as $key => $default) {
-            $settings[$key] = $this->systemSettingsService->get($key, $default);
+            $value = $this->systemSettingsService->get($key, $default);
+            $settings[$key] = $key === self::KEY_DOCUMENT_TYPES && empty($value) ? $default : $value;
         }
 
         return response()->json([

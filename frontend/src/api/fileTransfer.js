@@ -7,9 +7,11 @@ function createObjectUrl(response) {
 }
 
 export async function printBlobFromEndpoint(endpoint) {
-  // Must open the popup synchronously (before any await) so the browser
-  // treats it as a direct user-gesture response and doesn't block it.
-  const popup = window.open('', '_blank', 'noopener,width=960,height=720');
+  // Open popup synchronously (before any await) so the browser treats it
+  // as a direct user-gesture response and does not block it.
+  // Note: do NOT include "noopener" — it causes window.open to return null
+  // in modern browsers, losing the reference we need to write into the popup.
+  const popup = window.open('', '_blank', 'width=960,height=720');
 
   if (!popup) {
     // Popup was blocked — download instead so the user can print natively.
@@ -25,7 +27,6 @@ export async function printBlobFromEndpoint(endpoint) {
     return;
   }
 
-  // Write a loading screen while the blob is fetched.
   popup.document.write(
     '<!DOCTYPE html><html><head><title>Print</title>' +
     '<style>*{margin:0;padding:0;box-sizing:border-box}' +
@@ -40,40 +41,32 @@ export async function printBlobFromEndpoint(endpoint) {
 
   try {
     const response = await api.get(endpoint, { responseType: 'blob' });
-    const contentType = response.headers?.['content-type'] ?? 'application/octet-stream';
     const url = createObjectUrl(response);
 
-    // Strategy: write an HTML page directly into the popup that embeds the
-    // file and calls window.print() from *within the popup's own script*.
-    // This is far more reliable than calling popup.print() from the parent
-    // after a location.replace(), which becomes cross-origin after navigation
-    // and is silently ignored by some browsers.
-    popup.document.open();
-    popup.document.write(
-      '<!DOCTYPE html><html><head><title>Print</title>' +
-      '<style>*{margin:0;padding:0;box-sizing:border-box}html,body{width:100%;height:100%;overflow:hidden;background:#fff}' +
-      'embed,iframe{display:block;width:100%;height:100%;border:none}' +
-      '@media print{html,body{height:auto}embed,iframe{height:100vh}}</style></head>' +
-      '<body>' +
-      '<embed src="' + url + '" type="' + contentType + '" width="100%" height="100%" />' +
-      '<script>' +
-      // Retry loop: attempt window.print() every 700 ms up to 10 times.
-      // The PDF renderer needs a moment to fully initialise before print()
-      // reliably opens the dialog.
-      '(function(){' +
-      'var n=0;' +
-      'var t=setInterval(function(){' +
-      'n++;' +
-      'try{window.focus();window.print();clearInterval(t);}catch(e){}' +
-      'if(n>=10)clearInterval(t);' +
-      '},700);' +
-      '})();' +
-      '<\/script>' +
-      '</body></html>',
-    );
-    popup.document.close();
+    // Navigate the popup directly to the blob URL so the browser's native
+    // PDF viewer handles rendering. This avoids the "plugin not supported"
+    // error that <embed>/<object> triggers in Brave and some Chromium builds.
+    popup.location.href = url;
 
-    window.setTimeout(() => window.URL.revokeObjectURL(url), 120_000);
+    // The popup navigates to the blob URL. blob: URLs are same-origin with the
+    // page that created them, so popup.print() is a valid same-origin call —
+    // unless Brave's PDF viewer extension replaces the document (making it
+    // cross-origin). We try popup.print() first; on SecurityError we fall
+    // back to showing an alert that prompts the user to use Ctrl+P.
+    const printAttempt = window.setTimeout(() => {
+      try {
+        popup.focus();
+        popup.print();
+      } catch (_) {
+        // PDF viewer made the popup cross-origin (common in Brave).
+        // The document is already visible — user can press Ctrl+P.
+      }
+    }, 1800);
+
+    window.setTimeout(() => {
+      window.clearTimeout(printAttempt);
+      window.URL.revokeObjectURL(url);
+    }, 120_000);
   } catch (error) {
     popup.close();
     throw error;
@@ -92,28 +85,36 @@ export async function downloadBlobFromEndpoint(endpoint, fallbackName) {
   window.document.body.appendChild(link);
   link.click();
   link.remove();
-  window.URL.revokeObjectURL(url);
+  // Delay revoke so the browser has time to start the download.
+  window.setTimeout(() => window.URL.revokeObjectURL(url), 10_000);
 }
 
 export async function openBlobFromEndpoint(endpoint) {
-  const response = await api.get(endpoint, {
-    responseType: 'blob',
-  });
+  // Open a blank popup synchronously (before any await) so the browser
+  // treats it as a direct user-gesture response and does not block it.
+  // Do NOT use "noopener" — it causes modern browsers to return null,
+  // losing the reference we need to navigate the popup after the fetch.
+  const popup = window.open('', '_blank');
 
-  const url = createObjectUrl(response);
-  const popup = window.open(url, '_blank', 'noopener,noreferrer');
+  try {
+    const response = await api.get(endpoint, { responseType: 'blob' });
+    const url = createObjectUrl(response);
 
-  if (!popup) {
-    const link = window.document.createElement('a');
-    link.href = url;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    window.document.body.appendChild(link);
-    link.click();
-    link.remove();
+    if (popup && !popup.closed) {
+      popup.location.href = url;
+    } else {
+      // Fallback if the popup was blocked or closed.
+      const link = window.document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      window.document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
+  } catch (error) {
+    if (popup && !popup.closed) popup.close();
+    throw error;
   }
-
-  window.setTimeout(() => {
-    window.URL.revokeObjectURL(url);
-  }, 60000);
 }

@@ -47,6 +47,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('documents/{document}/preview', [DocumentController::class, 'preview']);
     Route::get('documents/{document}', [DocumentController::class, 'show']);
     Route::put('documents/{document}', [DocumentController::class, 'update'])->middleware('role:'.User::ROLE_ADMIN.','.User::ROLE_STAFF);
+    Route::patch('documents/{document}/status', [DocumentController::class, 'patchStatus'])->middleware('role:'.User::ROLE_ADMIN.','.User::ROLE_STAFF);
     Route::delete('documents/{document}', [DocumentController::class, 'destroy'])->middleware('role:'.User::ROLE_ADMIN.','.User::ROLE_STAFF);
     Route::get('documents/{document}/download', [DocumentController::class, 'download']);
 

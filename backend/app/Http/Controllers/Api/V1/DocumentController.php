@@ -13,6 +13,7 @@ use App\Services\DocumentFileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DocumentController extends Controller
@@ -38,6 +39,7 @@ class DocumentController extends Controller
                 'barangay_id',
                 'uploaded_by',
                 'status',
+                'file_type',
                 'date_from',
                 'date_to',
                 'sort',
@@ -151,6 +153,23 @@ class DocumentController extends Controller
         );
 
         return $disk->download($document->file_path, $document->original_file_name);
+    }
+
+    public function patchStatus(Request $request, Document $document): JsonResponse
+    {
+        $this->authorize('update', $document);
+
+        $validated = $request->validate([
+            'status' => ['required', 'string', Rule::in(Document::allowedStatuses())],
+        ]);
+
+        $document->update(['status' => $validated['status']]);
+        $document->load(['category', 'barangay', 'uploader']);
+
+        return response()->json([
+            'message' => 'Document status updated.',
+            'document' => DocumentResource::make($document)->resolve(),
+        ]);
     }
 
     public function preview(Request $request, Document $document): StreamedResponse

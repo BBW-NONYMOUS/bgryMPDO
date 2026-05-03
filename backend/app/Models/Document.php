@@ -154,6 +154,7 @@ class Document extends Model
             ->when($filters['barangay_id'] ?? null, fn (Builder $builder, mixed $value) => $builder->where('barangay_id', $value))
             ->when($filters['uploaded_by'] ?? null, fn (Builder $builder, mixed $value) => $builder->where('uploaded_by', $value))
             ->when($filters['status'] ?? null, fn (Builder $builder, mixed $value) => $builder->where('status', $value))
+            ->when($filters['file_type'] ?? null, fn (Builder $builder, mixed $value) => $builder->where('file_type', 'like', trim($value).'%'))
             ->when($filters['date_from'] ?? null, fn (Builder $builder, mixed $value) => $builder->whereDate('document_date', '>=', $value))
             ->when($filters['date_to'] ?? null, fn (Builder $builder, mixed $value) => $builder->whereDate('document_date', '<=', $value));
 

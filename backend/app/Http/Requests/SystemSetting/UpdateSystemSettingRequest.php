@@ -4,6 +4,7 @@ namespace App\Http\Requests\SystemSetting;
 
 use App\Http\Controllers\Api\V1\SystemSettingController;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class UpdateSystemSettingRequest extends FormRequest
@@ -17,15 +18,21 @@ class UpdateSystemSettingRequest extends FormRequest
     {
         $key = (string) $this->route('key');
 
+        $itemRules = ['string', 'max:255'];
+
+        if ($key === SystemSettingController::KEY_DOCUMENT_TYPES) {
+            $itemRules[] = Rule::in(SystemSettingController::DEFAULT_DOCUMENT_TYPES);
+        }
+
         return [
             'value' => match ($key) {
                 SystemSettingController::KEY_DOCUMENT_STATUSES => ['required', 'array', 'min:1'],
                 SystemSettingController::KEY_DOCUMENT_ACCESS_LEVELS => ['required', 'array', 'min:1'],
-                SystemSettingController::KEY_DOCUMENT_TYPES,
+                SystemSettingController::KEY_DOCUMENT_TYPES => ['required', 'array', 'min:1'],
                 SystemSettingController::KEY_CLASSIFICATIONS => ['nullable', 'array'],
                 default => ['prohibited'],
             },
-            'value.*' => ['string', 'max:255'],
+            'value.*' => $itemRules,
         ];
     }
 

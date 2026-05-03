@@ -10,8 +10,8 @@ export default function Login() {
   const location = useLocation();
   const { login } = useAuth();
   const [form, setForm] = useState({
-    email: 'admin@mpdo.local',
-    password: 'password123',
+    email: '',
+    password: '',
   });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -77,7 +77,7 @@ export default function Login() {
               <input
                 className="h-11 w-full rounded-xl border border-white/10 bg-white/8 px-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20"
                 type="email"
-                placeholder="admin@mpdo.local"
+                placeholder="Enter Your Email"
                 value={form.email}
                 onChange={(event) =>
                   setForm((current) => ({ ...current, email: event.target.value }))

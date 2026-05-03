@@ -13,6 +13,7 @@ import {
   updateUser,
 } from '../api/userApi';
 import {
+  alertErrorClassName,
   dangerButtonClassName,
   ghostButtonClassName,
   pageStackClassName,
@@ -107,6 +108,7 @@ export default function Users() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(blankUser);
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     async function bootstrap() {
@@ -130,6 +132,7 @@ export default function Users() {
   function openCreate() {
     setEditing(null);
     setForm(blankUser);
+    setFormError('');
     setOpen(true);
   }
 
@@ -145,12 +148,19 @@ export default function Users() {
       account_status: user.account_status ?? 'pending',
       account_status_remark: user.account_status_remark ?? '',
     });
+    setFormError('');
     setOpen(true);
+  }
+
+  function closeModal() {
+    setOpen(false);
+    setFormError('');
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
     setSubmitting(true);
+    setFormError('');
 
     try {
       if (editing) {
@@ -159,32 +169,46 @@ export default function Users() {
         await createUser(form);
       }
 
-      setOpen(false);
+      closeModal();
       await loadUsers(filters);
+    } catch (error) {
+      const validationErrors = error.response?.data?.errors;
+      const first = validationErrors ? Object.values(validationErrors).flat()[0] : null;
+      setFormError(first ?? error.response?.data?.message ?? 'Failed to save user. Please try again.');
     } finally {
       setSubmitting(false);
     }
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Delete this user account?')) {
-      return;
-    }
+    if (!window.confirm('Delete this user account?')) return;
 
-    await deleteUser(id);
-    await loadUsers(filters);
+    try {
+      await deleteUser(id);
+      await loadUsers(filters);
+    } catch (error) {
+      window.alert(error.response?.data?.message ?? 'Failed to delete user.');
+    }
   }
 
   async function handleApprove(user) {
     const remark = window.prompt('Approval remark (optional):') ?? '';
-    await approveUser(user.id, remark.trim() || undefined);
-    await loadUsers(filters);
+    try {
+      await approveUser(user.id, remark.trim() || undefined);
+      await loadUsers(filters);
+    } catch (error) {
+      window.alert(error.response?.data?.message ?? 'Failed to approve user.');
+    }
   }
 
   async function handleReject(user) {
     const remark = window.prompt('Rejection remark (optional):') ?? '';
-    await rejectUser(user.id, remark.trim() || undefined);
-    await loadUsers(filters);
+    try {
+      await rejectUser(user.id, remark.trim() || undefined);
+      await loadUsers(filters);
+    } catch (error) {
+      window.alert(error.response?.data?.message ?? 'Failed to reject user.');
+    }
   }
 
   return (
@@ -323,8 +347,9 @@ export default function Users() {
       <Modal
         title={editing ? 'Edit User' : 'Add User'}
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={closeModal}
       >
+        {formError && <div className={`${alertErrorClassName} mb-4`}>{formError}</div>}
         <UserForm
           values={form}
           barangays={barangays}

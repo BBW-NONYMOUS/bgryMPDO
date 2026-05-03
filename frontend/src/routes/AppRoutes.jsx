@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import ProtectedRoute from '../components/common/ProtectedRoute';
 import DashboardLayout from '../layouts/DashboardLayout';
 import ActivityLogs from '../pages/ActivityLogs';
+import ArchiveStatus from '../pages/ArchiveStatus';
 import Barangays from '../pages/Barangays';
 import Categories from '../pages/Categories';
 import Dashboard from '../pages/Dashboard';
@@ -9,6 +10,7 @@ import Documents from '../pages/Documents';
 import Login from '../pages/Login';
 import NotFound from '../pages/NotFound';
 import Profile from '../pages/Profile';
+import Reports from '../pages/Reports';
 import Settings from '../pages/Settings';
 import UploadDocument from '../pages/UploadDocument';
 import Users from '../pages/Users';
@@ -74,6 +76,22 @@ export default function AppRoutes() {
           element={(
             <ProtectedRoute roles={['admin']}>
               <ActivityLogs />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/archive-status"
+          element={(
+            <ProtectedRoute roles={['admin', 'staff']}>
+              <ArchiveStatus />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/reports"
+          element={(
+            <ProtectedRoute roles={['admin', 'staff']}>
+              <Reports />
             </ProtectedRoute>
           )}
         />

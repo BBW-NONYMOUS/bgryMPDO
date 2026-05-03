@@ -14,7 +14,7 @@ class SystemSettingsSeeder extends Seeder
         $defaults = [
             SystemSettingController::KEY_DOCUMENT_STATUSES => Document::defaultAllowedStatuses(),
             SystemSettingController::KEY_DOCUMENT_ACCESS_LEVELS => Document::defaultAllowedAccessLevels(),
-            SystemSettingController::KEY_DOCUMENT_TYPES => [],
+            SystemSettingController::KEY_DOCUMENT_TYPES => SystemSettingController::DEFAULT_DOCUMENT_TYPES,
             SystemSettingController::KEY_CLASSIFICATIONS => [],
         ];
 
@@ -26,4 +26,3 @@ class SystemSettingsSeeder extends Seeder
         }
     }
 }
-

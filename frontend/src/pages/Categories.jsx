@@ -4,6 +4,7 @@ import SearchFilterBar from '../components/common/SearchFilterBar';
 import DataTable from '../components/tables/DataTable';
 import { createCategory, deleteCategory, getCategories, updateCategory } from '../api/lookupApi';
 import {
+  alertErrorClassName,
   dangerButtonClassName,
   fieldClassName,
   fieldFullClassName,
@@ -52,6 +53,7 @@ export default function Categories() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(blankCategory);
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     loadCategories(filters);
@@ -65,6 +67,7 @@ export default function Categories() {
   function openCreate() {
     setEditing(null);
     setForm(blankCategory);
+    setFormError('');
     setOpen(true);
   }
 
@@ -75,12 +78,19 @@ export default function Categories() {
       description: category.description ?? '',
       is_active: Boolean(category.is_active),
     });
+    setFormError('');
     setOpen(true);
+  }
+
+  function closeModal() {
+    setOpen(false);
+    setFormError('');
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
     setSubmitting(true);
+    setFormError('');
 
     try {
       if (editing) {
@@ -89,20 +99,26 @@ export default function Categories() {
         await createCategory(form);
       }
 
-      setOpen(false);
+      closeModal();
       await loadCategories(filters);
+    } catch (error) {
+      const validationErrors = error.response?.data?.errors;
+      const first = validationErrors ? Object.values(validationErrors).flat()[0] : null;
+      setFormError(first ?? error.response?.data?.message ?? 'Failed to save category. Please try again.');
     } finally {
       setSubmitting(false);
     }
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Delete this category?')) {
-      return;
-    }
+    if (!window.confirm('Delete this category?')) return;
 
-    await deleteCategory(id);
-    await loadCategories(filters);
+    try {
+      await deleteCategory(id);
+      await loadCategories(filters);
+    } catch (error) {
+      window.alert(error.response?.data?.message ?? 'Failed to delete category.');
+    }
   }
 
   return (
@@ -209,8 +225,9 @@ export default function Categories() {
       <Modal
         title={editing ? 'Edit Category' : 'Add Category'}
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={closeModal}
       >
+        {formError && <div className={`${alertErrorClassName} mb-4`}>{formError}</div>}
         <form className={`space-y-6 ${formGridClassName}`} onSubmit={handleSubmit}>
           <div className={`${fieldFullClassName} col-span-full`}>
             <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
