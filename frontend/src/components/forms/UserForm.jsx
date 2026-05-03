@@ -116,14 +116,14 @@ export default function UserForm({
       </label>
 
       <label className={fieldClassName}>
-        <span className={fieldLabelClassName}>Account Status</span>
+        <span className={fieldLabelClassName}>Account Access</span>
         <select
           className={selectClassName}
           value={String(values.is_active)}
           onChange={(event) => onChange('is_active', event.target.value === 'true')}
         >
           <option value="true">Active</option>
-          <option value="false">Inactive</option>
+          <option value="false">Suspended</option>
         </select>
       </label>
 

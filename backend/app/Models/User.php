@@ -157,4 +157,9 @@ class User extends Authenticatable
     {
         return $this->account_status === self::ACCOUNT_APPROVED;
     }
+
+    public function isSuspended(): bool
+    {
+        return ! $this->is_active;
+    }
 }

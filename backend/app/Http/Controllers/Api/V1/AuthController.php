@@ -37,7 +37,7 @@ class AuthController extends Controller
 
         if (! $user->is_active) {
             throw ValidationException::withMessages([
-                'email' => 'This account is inactive.',
+                'email' => 'Your account has been suspended. Please contact the administrator.',
             ]);
         }
 

@@ -7,9 +7,10 @@ import { getBarangays } from '../api/lookupApi';
 import {
   approveUser,
   createUser,
-  deleteUser,
   getUsers,
   rejectUser,
+  suspendUser,
+  unsuspendUser,
   updateUser,
 } from '../api/userApi';
 import {
@@ -47,7 +48,7 @@ function StatusBadge({ active }) {
           : 'bg-zinc-100 text-zinc-600 ring-zinc-200'
       }`}
     >
-      {active ? 'Active' : 'Inactive'}
+      {active ? 'Active' : 'Suspended'}
     </span>
   );
 }
@@ -103,7 +104,7 @@ function AccountStatusBadge({ status }) {
 export default function Users() {
   const [users, setUsers] = useState([]);
   const [barangays, setBarangays] = useState([]);
-  const [filters, setFilters] = useState({ search: '', account_status: '' });
+  const [filters, setFilters] = useState({ search: '', account_status: '', is_active: '' });
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(blankUser);
@@ -180,14 +181,25 @@ export default function Users() {
     }
   }
 
-  async function handleDelete(id) {
-    if (!window.confirm('Delete this user account?')) return;
+  async function handleSuspend(user) {
+    if (!window.confirm(`Suspend ${user.name}'s account? They will be signed out and blocked from using the system.`)) return;
 
     try {
-      await deleteUser(id);
+      await suspendUser(user.id);
       await loadUsers(filters);
     } catch (error) {
-      window.alert(error.response?.data?.message ?? 'Failed to delete user.');
+      window.alert(error.response?.data?.message ?? 'Failed to suspend user.');
+    }
+  }
+
+  async function handleUnsuspend(user) {
+    if (!window.confirm(`Reactivate ${user.name}'s account? Their existing data will remain available.`)) return;
+
+    try {
+      await unsuspendUser(user.id);
+      await loadUsers(filters);
+    } catch (error) {
+      window.alert(error.response?.data?.message ?? 'Failed to reactivate user.');
     }
   }
 
@@ -236,6 +248,7 @@ export default function Users() {
           fields={[
             { name: 'search', label: 'Search', placeholder: 'Search by name or email' },
             { name: 'account_status', label: 'Account Status', placeholder: 'approved, pending, rejected' },
+            { name: 'is_active', label: 'Access', placeholder: 'true or false' },
           ]}
           values={filters}
           onChange={(field, value) =>
@@ -246,7 +259,7 @@ export default function Users() {
             loadUsers(filters);
           }}
           onReset={() => {
-            const nextFilters = { search: '', account_status: '' };
+            const nextFilters = { search: '', account_status: '', is_active: '' };
             setFilters(nextFilters);
             loadUsers(nextFilters);
           }}
@@ -329,10 +342,12 @@ export default function Users() {
                   </button>
                   <button
                     type="button"
-                    className={`${dangerButtonClassName} ${smallButtonClassName}`}
-                    onClick={() => handleDelete(row.id)}
+                    className={`${
+                      row.is_active ? dangerButtonClassName : primaryButtonClassName
+                    } ${smallButtonClassName}`}
+                    onClick={() => (row.is_active ? handleSuspend(row) : handleUnsuspend(row))}
                   >
-                    Delete
+                    {row.is_active ? 'Suspend' : 'Unsuspend'}
                   </button>
                 </div>
               ),

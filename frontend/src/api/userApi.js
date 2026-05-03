@@ -20,6 +20,16 @@ export async function deleteUser(id) {
   return response.data;
 }
 
+export async function suspendUser(id, remark) {
+  const response = await api.post(`/users/${id}/suspend`, remark ? { remark } : {});
+  return response.data;
+}
+
+export async function unsuspendUser(id, remark) {
+  const response = await api.post(`/users/${id}/unsuspend`, remark ? { remark } : {});
+  return response.data;
+}
+
 export async function approveUser(id, remark) {
   const response = await api.post(`/users/${id}/approve`, remark ? { remark } : {});
   return response.data;

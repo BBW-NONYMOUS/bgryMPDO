@@ -84,6 +84,7 @@ class UserController extends Controller
             unset($data['password']);
         }
 
+        $wasActive = $user->is_active;
         $data['is_active'] = $request->boolean('is_active', $user->is_active);
         $data['barangay_id'] = $this->normalizeBarangayAssignment($data['role'], $data['barangay_id'] ?? null);
 
@@ -93,6 +94,11 @@ class UserController extends Controller
         }
 
         $user->fill($data)->save();
+
+        if ($wasActive && ! $user->is_active) {
+            $user->tokens()->delete();
+        }
+
         $user->load('barangay')->loadCount('uploadedDocuments');
 
         $this->activityLogService->log(
@@ -188,29 +194,89 @@ class UserController extends Controller
         ]);
     }
 
-    public function destroy(Request $request, User $user): JsonResponse
+    public function suspend(Request $request, User $user): JsonResponse
     {
         if ($request->user()?->is($user)) {
             return response()->json([
-                'message' => 'You cannot delete your own account.',
+                'message' => 'You cannot suspend your own account.',
             ], 422);
         }
 
+        $validated = $request->validate([
+            'remark' => ['nullable', 'string'],
+        ]);
+
+        $user->forceFill([
+            'is_active' => false,
+            'account_status_remark' => $validated['remark'] ?? $user->account_status_remark,
+            'account_status_updated_by' => $request->user()?->id,
+            'account_status_updated_at' => now(),
+        ])->save();
+
         $user->tokens()->delete();
-        $user->delete();
 
         $this->activityLogService->log(
-            action: 'user.deleted',
+            action: 'user.suspended',
             module: 'users',
-            description: "Deleted user {$user->name}.",
+            description: "Suspended user {$user->name}.",
             user: $request->user(),
-            details: ['deleted_user_id' => $user->id],
+            details: [
+                'suspended_user_id' => $user->id,
+                'remark' => $validated['remark'] ?? null,
+            ],
             request: $request,
         );
 
+        $user->load('barangay')->loadCount('uploadedDocuments');
+
         return response()->json([
-            'message' => 'User deleted successfully.',
+            'message' => 'User suspended successfully.',
+            'user' => UserResource::make($user)->resolve(),
         ]);
+    }
+
+    public function unsuspend(Request $request, User $user): JsonResponse
+    {
+        if ($request->user()?->is($user)) {
+            return response()->json([
+                'message' => 'You cannot reactivate your own account from this control.',
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'remark' => ['nullable', 'string'],
+        ]);
+
+        $user->forceFill([
+            'is_active' => true,
+            'account_status_remark' => $validated['remark'] ?? $user->account_status_remark,
+            'account_status_updated_by' => $request->user()?->id,
+            'account_status_updated_at' => now(),
+        ])->save();
+
+        $this->activityLogService->log(
+            action: 'user.unsuspended',
+            module: 'users',
+            description: "Reactivated user {$user->name}.",
+            user: $request->user(),
+            details: [
+                'reactivated_user_id' => $user->id,
+                'remark' => $validated['remark'] ?? null,
+            ],
+            request: $request,
+        );
+
+        $user->load('barangay')->loadCount('uploadedDocuments');
+
+        return response()->json([
+            'message' => 'User reactivated successfully.',
+            'user' => UserResource::make($user)->resolve(),
+        ]);
+    }
+
+    public function destroy(Request $request, User $user): JsonResponse
+    {
+        return $this->suspend($request, $user);
     }
 
     private function normalizeBarangayAssignment(string $role, mixed $barangayId): mixed

@@ -17,16 +17,17 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('auth')->group(function (): void {
     Route::post('login', [AuthController::class, 'login']);
 
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', 'active.account'])->group(function (): void {
         Route::get('profile', [AuthController::class, 'profile']);
         Route::put('profile', [ProfileController::class, 'update']);
         Route::put('profile/password', [ProfileController::class, 'updatePassword']);
         Route::post('profile/photo', [ProfileController::class, 'updatePhoto']);
-        Route::post('logout', [AuthController::class, 'logout']);
     });
+
+    Route::middleware('auth:sanctum')->post('logout', [AuthController::class, 'logout']);
 });
 
-Route::middleware('auth:sanctum')->group(function (): void {
+Route::middleware(['auth:sanctum', 'active.account'])->group(function (): void {
     Route::get('dashboard', [DashboardController::class, 'index']);
     Route::get('reports/dashboard-summary', [ReportController::class, 'dashboardSummary']);
     Route::get('reports/documents', [ReportController::class, 'documents']);
@@ -57,6 +58,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::put('users/{user}', [UserController::class, 'update'])->middleware('role:'.User::ROLE_ADMIN);
     Route::post('users/{user}/approve', [UserController::class, 'approve'])->middleware('role:'.User::ROLE_ADMIN);
     Route::post('users/{user}/reject', [UserController::class, 'reject'])->middleware('role:'.User::ROLE_ADMIN);
+    Route::post('users/{user}/suspend', [UserController::class, 'suspend'])->middleware('role:'.User::ROLE_ADMIN);
+    Route::post('users/{user}/unsuspend', [UserController::class, 'unsuspend'])->middleware('role:'.User::ROLE_ADMIN);
     Route::delete('users/{user}', [UserController::class, 'destroy'])->middleware('role:'.User::ROLE_ADMIN);
 
     Route::get('activity-logs', [ActivityLogController::class, 'index'])->middleware('role:'.User::ROLE_ADMIN);

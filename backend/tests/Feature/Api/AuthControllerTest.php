@@ -69,4 +69,42 @@ class AuthControllerTest extends TestCase
             ->assertStatus(422)
             ->assertJsonPath('errors.email.0', 'This account is pending approval.');
     }
+
+    public function test_suspended_account_cannot_login_with_clear_message(): void
+    {
+        User::factory()->create([
+            'email' => 'suspended@mpdo.local',
+            'password' => Hash::make('password123'),
+            'is_active' => false,
+            'account_status' => User::ACCOUNT_APPROVED,
+        ]);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'email' => 'suspended@mpdo.local',
+            'password' => 'password123',
+        ]);
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonPath('errors.email.0', 'Your account has been suspended. Please contact the administrator.');
+    }
+
+    public function test_suspended_authenticated_account_is_blocked_from_protected_routes(): void
+    {
+        $user = User::factory()->create([
+            'is_active' => false,
+            'account_status' => User::ACCOUNT_APPROVED,
+        ]);
+
+        $token = $user->createToken('mpdo-api')->plainTextToken;
+
+        $response = $this
+            ->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/v1/dashboard');
+
+        $response
+            ->assertForbidden()
+            ->assertJsonPath('code', 'account_suspended')
+            ->assertJsonPath('message', 'Your account has been suspended. Please contact the administrator.');
+    }
 }
