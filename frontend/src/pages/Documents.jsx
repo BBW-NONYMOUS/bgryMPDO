@@ -4,8 +4,6 @@ import {
   deleteDocument,
   downloadDocument,
   getDocuments,
-  previewDocument,
-  printDocument,
   updateDocument,
 } from '../api/documentApi';
 import { downloadDocumentsReport } from '../api/reportApi';
@@ -461,20 +459,6 @@ export default function Documents() {
       label: 'Actions',
       render: (row) => (
         <div className={tableActionsClassName}>
-          <button
-            type="button"
-            className={`${ghostButtonClassName} ${smallButtonClassName}`}
-            onClick={() => previewDocument(row.id)}
-          >
-            Open
-          </button>
-          <button
-            type="button"
-            className={`${ghostButtonClassName} ${smallButtonClassName}`}
-            onClick={() => printDocument(row.id)}
-          >
-            Print
-          </button>
           <button
             type="button"
             className={`${ghostButtonClassName} ${smallButtonClassName}`}

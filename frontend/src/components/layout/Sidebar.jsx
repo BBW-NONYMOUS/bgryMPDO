@@ -9,10 +9,8 @@ const navigation = [
     items: [
       { to: '/dashboard', label: 'Dashboard', icon: 'dashboard', roles: ['admin', 'staff', 'barangay'] },
       { to: '/users', label: 'User Management', icon: 'users', roles: ['admin'] },
-      { to: '/settings#roles-permissions', label: 'Roles & Permissions', icon: 'permissions', roles: ['admin'], activePath: '/settings#roles-permissions' },
       { to: '/categories', label: 'Categories', icon: 'categories', roles: ['admin'] },
       { to: '/barangays', label: 'Barangays', icon: 'barangays', roles: ['admin'] },
-      { to: '/settings#document-types', label: 'Document Types', icon: 'tag', roles: ['admin'], activePath: '/settings#document-types' },
       { to: '/archive-status', label: 'Archive Status', icon: 'status', roles: ['admin', 'staff'] },
       { to: '/documents', label: 'Documents', icon: 'documents', roles: ['admin', 'staff', 'barangay'] },
       { to: '/reports', label: 'Reports', icon: 'reports', roles: ['admin', 'staff'] },
